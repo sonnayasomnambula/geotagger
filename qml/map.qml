@@ -17,13 +17,15 @@ Rectangle {
         anchors.fill: parent
         plugin: mapPlugin
         center: pathController.center
-        zoomLevel: 3
+        zoomLevel: pathController.zoom
 
         MapPolyline {
             id: track
             line.width: 3
             line.color: 'red'
         }
+
+//        onZoomLevelChanged: console.log(zoomLevel)
     }
 
     function load() {
@@ -36,7 +38,8 @@ Rectangle {
 
     Connections {
         target: pathController
-        onGeopathChanged: track.path = load();
+        onGeoPathChanged: track.path = load();
         onCenterChanged: map.center = pathController.center;
+        onZoomChanged: map.zoomLevel = pathController.zoom;
     }
 }

@@ -5,9 +5,12 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
+class QString;
+class QStringList;
 QT_END_NAMESPACE
 
 class PathController;
+class PhotosListModel;
 
 class MainWindow : public QMainWindow
 {
@@ -19,11 +22,17 @@ public:
 
 private slots:
     void on_action_Open_triggered();
+    void on_action_Add_photos_triggered();
 
 private:
-    bool open(const QString& name);
+    void closeEvent(QCloseEvent* e) override;
+    bool openTrack(const QString& name);
+
+    void loadSettings();
+    void saveSettings();
 
     Ui::MainWindow* ui = nullptr;
     PathController* mPathController = nullptr;
+    PhotosListModel* mModel = nullptr;
 };
 #endif // MAINWINDOW_H

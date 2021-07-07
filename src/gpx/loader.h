@@ -25,6 +25,11 @@ public:
     QGeoPath geoPath() const;
     QGeoCoordinate center() const { return mCenter; }
 
+    static QGeoCoordinate fromExifInfernalFormat(const QVector<QPair<quint32, quint32>>& lat,
+                                         const QString& latRef,
+                                         const QVector<QPair<quint32, quint32>>& lon,
+                                         const QString& lonRef);
+
 private:
     bool warn(const QString& text);
 

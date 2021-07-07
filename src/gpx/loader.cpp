@@ -1,5 +1,7 @@
 #include "loader.h"
 
+#include <cmath>
+
 #include <QDebug>
 #include <QCoreApplication>
 #include <QGeoCoordinate>
@@ -9,8 +11,31 @@
 #include <QFileInfo>
 #include <QXmlStreamReader>
 #include <QTextCodec>
+#include <QPointF>
 
 #include "xml/xmlnodereader.h"
+
+class Statistic
+{
+public:
+    void add(double lat, double lon) {
+        if (mTotal == 0) {
+
+        }
+
+        mSum += QPointF(lat, lon);
+        mTotal++;
+    }
+
+    QGeoCoordinate center() const {
+        return QGeoCoordinate(mSum.x() / mTotal, mSum.y() / mTotal);
+    }
+
+private:
+    QPointF mSum;
+    QGeoCoordinate mLatMax, mLatMin, mLonMax, mLonMin;
+    int mTotal = 0;
+};
 
 bool GPX::Loader::load(const QString & url)
 {
@@ -32,8 +57,7 @@ bool GPX::Loader::load(const QString & url)
     QString data = stream.readAll();
 
     mTrack.clear();
-    double aLat = 0., aLon = 0.;
-    int total = 0;
+    Statistic stat;
 
     QXmlStreamReader xml(data);
     XmlNodeReader rootNode(&xml);
@@ -71,9 +95,7 @@ bool GPX::Loader::load(const QString & url)
                                         lon = pointNode.value().toDouble();
                                     if (pointNode.isValid()) {
                                         segment.append(QGeoCoordinate(lat, lon));
-                                        aLat += lat;
-                                        aLon += lon;
-                                        ++total;
+                                        stat.add(lat, lon);
                                     }
                                 }
                             }
@@ -85,7 +107,7 @@ bool GPX::Loader::load(const QString & url)
         }
     }
 
-    mCenter = QGeoCoordinate(aLat / total, aLon / total);
+    mCenter = stat.center();
 
     return true;
 }
@@ -102,6 +124,31 @@ QGeoPath GPX::Loader::geoPath() const
     }
 
     return path;
+}
+
+QGeoCoordinate GPX::Loader::fromExifInfernalFormat(const QVector<QPair<quint32, quint32>> & lat, const QString & latRef, const QVector<QPair<quint32, quint32> > & lon, const QString & lonRef)
+{
+    struct HMS {
+        double h, m, s;
+        explicit HMS(const QVector<QPair<quint32, quint32>>& value) :
+            h(1.0 * value[0].first / value[0].second),
+            m(1.0 * value[1].first / value[1].second),
+            s(1.0 * value[2].first / value[2].second)
+        {}
+        double join() { return h + m / 60 + s / 60 / 60; }
+    };
+
+    if (lat.size() != 3 || lon.size() != 3) return {};
+
+    double llat = HMS(lat).join();
+    double llon = HMS(lon).join();
+
+    if (latRef == "S")
+        llat = -llat;
+    if (lonRef == "W")
+        llon = -llon;
+
+    return QGeoCoordinate(llat, llon);
 }
 
 bool GPX::Loader::warn(const QString& text)

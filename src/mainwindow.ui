@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>1227</width>
     <height>600</height>
    </rect>
   </property>
@@ -14,12 +14,18 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QQuickWidget" name="map">
-      <property name="resizeMode">
-       <enum>QQuickWidget::SizeRootObjectToView</enum>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
+      <widget class="QQuickWidget" name="map">
+       <property name="resizeMode">
+        <enum>QQuickWidget::SizeRootObjectToView</enum>
+       </property>
+      </widget>
+      <widget class="QTreeView" name="photos"/>
      </widget>
     </item>
    </layout>
@@ -29,7 +35,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1227</width>
      <height>22</height>
     </rect>
    </property>
@@ -38,13 +44,19 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Open"/>
+    <addaction name="action_Add_photos"/>
    </widget>
    <addaction name="menu_File"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_Open">
    <property name="text">
-    <string>&amp;Open...</string>
+    <string>&amp;Open track...</string>
+   </property>
+  </action>
+  <action name="action_Add_photos">
+   <property name="text">
+    <string>&amp;Add photos...</string>
    </property>
   </action>
  </widget>

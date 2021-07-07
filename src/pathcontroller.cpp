@@ -15,3 +15,11 @@ void PathController::setCenter(const QGeoCoordinate& center)
         emit centerChanged();
     }
 }
+
+void PathController::setZoom(int zoom)
+{
+    if (zoom != mZoom) {
+        mZoom = zoom;
+        emit zoomChanged();
+    }
+}

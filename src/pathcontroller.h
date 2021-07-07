@@ -13,10 +13,12 @@ class PathController : public QObject
 
     Q_PROPERTY(QGeoPath geopath READ geoPath WRITE setGeoPath NOTIFY geoPathChanged)
     Q_PROPERTY(QGeoCoordinate center READ center WRITE setCenter NOTIFY centerChanged)
+    Q_PROPERTY(qreal zoom READ zoom WRITE setZoom NOTIFY zoomChanged)
 
 signals:
     void geoPathChanged();
     void centerChanged();
+    void zoomChanged();
 
 public:
     using QObject::QObject;
@@ -27,9 +29,12 @@ public:
     QGeoCoordinate center() const { return mCenter; }
     void setCenter(const QGeoCoordinate& center);
 
+    int zoom() const { return mZoom; }
+    void setZoom(int zoom);
+
     QGeoPath mGeoPath;
     QGeoCoordinate mCenter;
-
+    qreal mZoom = 3;
 };
 
 #endif // PATHCONTROLLER_H
