@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/qml">
+        <file alias="map.qml">../qml/map.qml</file>
+    </qresource>
+    <qresource prefix="/lng">
+        <file>en_US.ts</file>
+    </qresource>
+</RCC>
