@@ -92,6 +92,16 @@
           </layout>
          </widget>
         </item>
+        <item>
+         <widget class="QLabel" name="picture">
+          <property name="text">
+           <string>&lt;picture&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </widget>

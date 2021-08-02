@@ -45,11 +45,11 @@ Rectangle {
 
                     Image {
                         id: pic
-                        source: "/img/not_available.png"
+                        source: _pixmap_
                     }
 
                     Text {
-                        text: _name_
+                        text: _base_name_
                         color: "black"
                         anchors.horizontalCenter: pic.horizontalCenter
                         anchors.bottom: pic.top

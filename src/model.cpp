@@ -1,8 +1,10 @@
 #include "model.h"
 
+#include <QBuffer>
 #include <QFileInfo>
 #include <QDateTime>
 #include <QDebug>
+#include <QPixmap>
 #include <QPointF>
 
 #include <sigvdr.de/qexifimageheader.h>
@@ -61,6 +63,38 @@ bool Model::setFiles(const QStringList & files)
             QString lonRef = exif.value(Exif::GpsLongitudeRef).toString();
 
             item.position = GPX::Loader::fromExifInfernalFormat(lat, latRef, lon, lonRef);
+        }
+
+        {
+            // TODO move to thread
+
+            QPixmap pix;
+            if (!pix.load(name))
+            {
+                item.pixmap = ":/img/not_available.png";
+            }
+            else
+            {
+                const int a = 32;
+                if (pix.width() > pix.height())
+                    pix = pix.scaledToHeight(a);
+                else
+                    pix = pix.scaledToWidth(a);
+
+                pix = pix.copy((pix.width() - a) / 2, (pix.height() - a) / 2, a, a);
+
+                QByteArray raw;
+                QBuffer buff(&raw);
+                buff.open(QIODevice::WriteOnly);
+                pix.save(&buff, "JPEG");
+
+                QString base64("data:image/jpg;base64,");
+                base64.append(QString::fromLatin1(raw.toBase64().data()));
+
+                item.pixmap = base64;
+            }
+
+
         }
 
         mFiles.append(name);
@@ -146,9 +180,13 @@ QVariant Model::data(const QModelIndex &index, int role) const
     if (index.row() >= mFiles.size())
         return {};
 
-    const QString& name = mFiles.at(index.row());
-    Q_ASSERT(mData.contains(name));
-    const Item& item = mData[name];
+    const QString& path = mFiles.at(index.row());
+
+    if (role == Role::Path)
+        return path;
+
+    Q_ASSERT(mData.contains(path));
+    const Item& item = mData[path];
 
     if (role == Qt::DisplayRole)
     {
@@ -157,18 +195,21 @@ QVariant Model::data(const QModelIndex &index, int role) const
         case TableHeader::Name:      return item.baseName;
         case TableHeader::Time:      return item.lastModified;
         case TableHeader::Position:  return item.position;
-        default:                return QVariant();
+        default:                     return {};
         }
     }
 
-    if (role == QmlRole::Name)
+    if (role == Role::BaseName)
         return item.baseName;
 
-    if (role == QmlRole::Latitude)
+    if (role == Role::Latitude)
         return item.position.lat();
 
-    if (role == QmlRole::Longitude)
+    if (role == Role::Longitude)
         return item.position.lon();
+
+    if (role == Role::Pixmap)
+        return item.pixmap;
 
     return {};
 }
@@ -185,9 +226,10 @@ QHash<int, QByteArray> Model::roleNames() const
 {
     QHash<int, QByteArray> roles;
 
-    roles[QmlRole::Name] = "_name_";
-    roles[QmlRole::Latitude] = "_latitude_";
-    roles[QmlRole::Longitude] = "_longitude_";
+    roles[Role::BaseName] = "_base_name_";
+    roles[Role::Latitude] = "_latitude_";
+    roles[Role::Longitude] = "_longitude_";
+    roles[Role::Pixmap] = "_pixmap_";
 
     return roles;
 }

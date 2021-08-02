@@ -5,6 +5,7 @@
 #include <QDateTime>
 #include <QGeoCoordinate>
 #include <QGeoPath>
+#include <QPixmap>
 #include <QPointF>
 #include <QQmlEngine>
 #include <QString>
@@ -58,27 +59,30 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     int columnCount(const QModelIndex &parent) const override;
 
+    struct Role
+    {
+        enum
+        {
+            Path = Qt::UserRole,
+            BaseName,
+            Latitude,
+            Longitude,
+            Pixmap
+        };
+    };
+
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
 protected:
     QHash<int, QByteArray> roleNames() const override;
 
 private:
-    struct QmlRole // fuck the static_cast<int>
-    {
-        enum
-        {
-            Name = Qt::UserRole,
-            Latitude,
-            Longitude,
-        };
-    };
-
     struct Item
     {
         QString baseName;
         QDateTime lastModified;
         GeoPoint position;
+        QString pixmap;
     };
 
     Item item(int row) const;

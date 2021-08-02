@@ -1,7 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-//#include <QDebug>
+#include <QDebug>
+#include <QPixmap>
 #include <QStandardPaths>
 #include <QSettings>
 #include <QStringList>
@@ -65,6 +66,8 @@ MainWindow::MainWindow(QWidget* parent)
     ui->photos->setItemDelegateForColumn(Model::TableHeader::Time, new TimeDelegate(this));
     ui->photos->setItemDelegateForColumn(Model::TableHeader::Position, new GeoCoordinateDelegate(this));
 
+    connect(ui->photos->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
+
     // playing with size policy and stretch factor didn't work
     ui->splitter->setSizes({860, 345});
 
@@ -99,6 +102,20 @@ void MainWindow::saveSettings()
     settings.window.geometry.save(this);
     settings.window.splitterState.save(ui->splitter);
     settings.window.photosHeaderState.save(ui->photos->header());
+}
+
+void MainWindow::selectionChanged()
+{
+    auto selection = ui->photos->selectionModel()->selectedIndexes();
+    if (selection.isEmpty())
+    {
+        ui->picture->setPixmap({});
+        return;
+    }
+
+    QString fileName = mModel->data(selection.last(), Model::Role::Path).toString();
+    QPixmap pix(fileName);
+    ui->picture->setPixmap(pix.scaledToWidth(ui->picture->width()));
 }
 
 void MainWindow::on_actionLoadTrack_triggered()
@@ -163,12 +180,4 @@ void MainWindow::on_actionAddPhotos_triggered()
     }
 
     mModel->setFiles(names);
-
-//    QList<QGeoCoordinate> data;
-//    for (int row = 0; row < mModel->rowCount(); ++row)
-//    {
-//        auto item = mModel->item(row);
-//        data.append(QGeoCoordinate(item.position.lat(), item.position.lon()));
-//    }
-//    mController->setFiles(data);
 }

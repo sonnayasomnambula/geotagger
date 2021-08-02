@@ -31,6 +31,8 @@ private:
     void loadSettings();
     void saveSettings();
 
+    void selectionChanged();
+
     Ui::MainWindow* ui = nullptr;
     Model* mModel = nullptr;
 };
