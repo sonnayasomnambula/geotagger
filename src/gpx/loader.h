@@ -30,8 +30,13 @@ public:
                                          const QVector<QPair<quint32, quint32>>& lon,
                                          const QString& lonRef);
 
+    QDateTime startTime() const { return mTrack.startTime(); }
+    QDateTime finishTime() const { return mTrack.finishTime(); }
+
 private:
     bool warn(const QString& text);
+
+    static QDateTime stringToDateTime(const QString& s);
 
     Track mTrack;
     QString mLastError;

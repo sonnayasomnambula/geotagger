@@ -86,17 +86,35 @@ bool GPX::Loader::load(const QString & url)
                             while (segmentNode.readNextStartElement())
                             {
                                 auto pointNode = segmentNode.child();
-                                double lat, lon;
+                                QGeoCoordinate coord;
+                                QDateTime timestamp;
                                 if (pointNode.isCalled("trkpt"))
                                 {
                                     if (pointNode.readAttribute("lat", QVariant::Double))
-                                        lat = pointNode.value().toDouble();
+                                        coord.setLatitude(pointNode.value().toDouble());
                                     if (pointNode.readAttribute("lon", QVariant::Double))
-                                        lon = pointNode.value().toDouble();
-                                    if (pointNode.isValid()) {
-                                        segment.append(QGeoCoordinate(lat, lon));
-                                        stat.add(lat, lon);
+                                        coord.setLongitude(pointNode.value().toDouble());
+                                }
+
+                                while (pointNode.readNextStartElement())
+                                {
+                                    auto pointPropsNode = pointNode.child();
+                                    if (pointPropsNode.isCalled("ele", XmlNodeReader::Requirement::NotRequired) && pointPropsNode.read(QVariant::Double))
+                                    {
+                                        coord.setAltitude(pointPropsNode.value().toDouble());
                                     }
+                                    if (pointPropsNode.isCalled("time", XmlNodeReader::Requirement::NotRequired) && pointPropsNode.read())
+                                    {
+                                        timestamp = stringToDateTime(pointPropsNode.value().toString());
+                                    }
+                                }
+
+                                if (coord.isValid())
+                                {
+                                    QGeoPositionInfo point(coord, timestamp);
+//                                    qDebug() << point;
+                                    segment.append(point);
+                                    stat.add(coord.latitude(), coord.longitude());
                                 }
                             }
                             mTrack.addSegment(segment);
@@ -117,9 +135,9 @@ QGeoPath GPX::Loader::geoPath() const
     QGeoPath path;
     for (const GPX::Track::Segment& segment : mTrack.segments())
     {
-        for (const QGeoCoordinate& coord : segment)
+        for (const auto& point : segment)
         {
-            path.addCoordinate(coord);
+            path.addCoordinate(point.coordinate());
         }
     }
 
@@ -156,4 +174,26 @@ bool GPX::Loader::warn(const QString& text)
     mLastError = text;
     qWarning().noquote() << mLastError;
     return false;
+}
+
+#include <QTimeZone>
+
+QDateTime GPX::Loader::stringToDateTime(const QString& s)
+{
+    static const int isoStrLen = QString("2021-07-01T06:58:09").length();
+
+    if (s.length() == isoStrLen + 1 && (s[isoStrLen] == 'Z' || s[isoStrLen] == 'z'))
+    {
+        // ISO 8601 with Z suffix
+        QDateTime dt = QDateTime::fromString(s.left(isoStrLen), Qt::ISODate);
+        dt.setTimeSpec(Qt::UTC);
+        return dt.toLocalTime();
+    }
+
+    if (s.length() == isoStrLen)
+    {
+        return QDateTime::fromString(s, Qt::ISODate);
+    }
+
+    return {};
 }

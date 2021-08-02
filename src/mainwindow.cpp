@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <QDebug>
+//#include <QDebug>
 #include <QStandardPaths>
 #include <QSettings>
 #include <QStringList>
@@ -13,8 +13,7 @@
 #include <QTime>
 
 #include "abstractsettings.h"
-#include "pathcontroller.h"
-#include "photoslistmodel.h"
+#include "model.h"
 #include "gpx/loader.h"
 
 struct Settings : AbstractSettings
@@ -47,25 +46,27 @@ public:
     using QStyledItemDelegate::QStyledItemDelegate;
     QString displayText(const QVariant& value, const QLocale& /*locale*/) const override {
         if (!value.isValid()) return "";
-        QPointF p = value.toPointF();
-        return QGeoCoordinate(p.x(), p.y()).toString(QGeoCoordinate::DegreesWithHemisphere);
+        GeoPoint p = value.toPointF();
+        return QGeoCoordinate(p.lat(), p.lon()).toString(QGeoCoordinate::DegreesWithHemisphere);
     }
 };
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow),
-      mPathController(new PathController(this)),
-      mModel(new PhotosListModel(this))
+      mModel(new Model(this))
 {
     ui->setupUi(this);
-    QQmlEngine * engine = ui->map->engine();
-    engine->rootContext()->setContextProperty("pathController", mPathController);
+    QQmlEngine* engine = ui->map->engine();
+    engine->rootContext()->setContextProperty("controller", mModel);
     ui->map->setSource(QUrl("qrc:///qml/map.qml"));
 
     ui->photos->setModel(mModel);
-    ui->photos->setItemDelegateForColumn(PhotosListModel::Header::Time, new TimeDelegate(this));
-    ui->photos->setItemDelegateForColumn(PhotosListModel::Header::Position, new GeoCoordinateDelegate(this));
+    ui->photos->setItemDelegateForColumn(Model::TableHeader::Time, new TimeDelegate(this));
+    ui->photos->setItemDelegateForColumn(Model::TableHeader::Position, new GeoCoordinateDelegate(this));
+
+    // playing with size policy and stretch factor didn't work
+    ui->splitter->setSizes({860, 345});
 
     loadSettings();
 }
@@ -100,7 +101,7 @@ void MainWindow::saveSettings()
     settings.window.photosHeaderState.save(ui->photos->header());
 }
 
-void MainWindow::on_action_Open_triggered()
+void MainWindow::on_actionLoadTrack_triggered()
 {
     Settings settings;
 
@@ -123,13 +124,26 @@ bool MainWindow::openTrack(const QString& name)
         return false;
     }
 
-    mPathController->setGeoPath(loader.geoPath());
-    mPathController->setCenter(loader.center());
-    mPathController->setZoom(9); // TODO
+    mModel->setTrack(loader.geoPath());
+    mModel->setCenter(loader.center());
+    mModel->setZoom(9); // TODO
+
+    QTime start = loader.startTime().time();
+    QTime finish = loader.finishTime().time();
+
+    ui->startTime->setText(start.isNull() ? tr("NaN") : start.toString());
+    ui->finishTime->setText(finish.isNull() ? tr("NaN") : finish.toString());
+
+    if (start.isNull() || finish.isNull())
+    {
+        QMessageBox::warning(this, "", tr("No time information in the track!"));
+        return false;
+    }
+
     return true;
 }
 
-void MainWindow::on_action_Add_photos_triggered()
+void MainWindow::on_actionAddPhotos_triggered()
 {
     Settings settings;
 
@@ -143,5 +157,18 @@ void MainWindow::on_action_Add_photos_triggered()
     settings.dirs.photo.save(directory);
 
     if (!mModel->setFiles(names))
+    {
         QMessageBox::warning(this, "", mModel->lastError());
+        return;
+    }
+
+    mModel->setFiles(names);
+
+//    QList<QGeoCoordinate> data;
+//    for (int row = 0; row < mModel->rowCount(); ++row)
+//    {
+//        auto item = mModel->item(row);
+//        data.append(QGeoCoordinate(item.position.lat(), item.position.lon()));
+//    }
+//    mController->setFiles(data);
 }

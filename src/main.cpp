@@ -2,7 +2,7 @@
 #include <QTextCodec>
 
 #include "mainwindow.h"
-#include "pathcontroller.h"
+#include "model.h"
 
 int main(int argc, char *argv[])
 {
@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     a.setOrganizationDomain("sonnayasomnambula.org");
     a.setApplicationVersion("0.1");
 
-    qmlRegisterType<PathController>("org.sonnayasomnambula.pathcontroller", 0, 1, "PathController");
+    qmlRegisterType<Model>("org.sonnayasomnambula.stravauploader.model", 0, 1, "Model");
 
     MainWindow w;
     w.show();

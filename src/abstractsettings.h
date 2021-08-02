@@ -29,11 +29,6 @@ public:
             return QSettings().contains(mKey);
         }
 
-        template<class Widget>
-        void restoreState(Widget* widget) {
-            widget->restoreState(operator ()(widget->saveState()));
-        }
-
     private:
         const QString mKey;
     };
@@ -52,7 +47,7 @@ public:
 
         template <class Widget>
         void restore(Widget* widget) {
-            widget->restoreState(mTag.operator ()(widget->saveState()));
+            widget->restoreState(mTag(widget->saveState()));
         }
     };
 
@@ -70,7 +65,7 @@ public:
 
         template <class Widget>
         void restore(Widget* widget) {
-            widget->restoreGeometry(mTag.operator ()(widget->saveGeometry()));
+            widget->restoreGeometry(mTag(widget->saveGeometry()));
         }
     };
 };
