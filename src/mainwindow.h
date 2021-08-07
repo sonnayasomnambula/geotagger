@@ -26,7 +26,6 @@ private slots:
 
 private:
     void closeEvent(QCloseEvent* e) override;
-    bool openTrack(const QString& name);
 
     void loadSettings();
     void saveSettings();

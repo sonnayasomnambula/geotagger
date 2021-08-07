@@ -4,11 +4,14 @@
 #include <QAbstractListModel>
 #include <QDateTime>
 #include <QGeoCoordinate>
+#include <QGeoPositionInfo>
 #include <QGeoPath>
 #include <QPixmap>
 #include <QPointF>
 #include <QQmlEngine>
 #include <QString>
+
+#include "gpx/track.h"
 
 class GeoPoint : public QPointF
 {
@@ -26,7 +29,7 @@ class Model : public QAbstractListModel
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(QGeoPath track MEMBER mTrack WRITE setTrack NOTIFY trackChanged)
+    Q_PROPERTY(QGeoPath path MEMBER mPath NOTIFY trackChanged)
     Q_PROPERTY(QGeoCoordinate center MEMBER mCenter WRITE setCenter NOTIFY centerChanged)
     Q_PROPERTY(qreal zoom MEMBER mZoom WRITE setZoom NOTIFY zoomChanged)
     Q_PROPERTY(QStringList files MEMBER mFiles WRITE setFiles NOTIFY filesChanged)
@@ -42,9 +45,11 @@ public:
     explicit Model(QObject* parent = nullptr);
 
     bool setFiles(const QStringList& files);
-    void setTrack(const QGeoPath& geoPath);
+    void setTrack(const GPX::Track& track);
     void setCenter(const QGeoCoordinate& center);
     void setZoom(int zoom);
+
+    const QList<QGeoPositionInfo>& track() const { return mTrack; }
 
     Q_INVOKABLE QGeoCoordinate coordinate(const QString& name) const;
 
@@ -73,6 +78,8 @@ public:
     };
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+
+    void guessPhotoCoordinates();
 
 protected:
     QHash<int, QByteArray> roleNames() const override;
@@ -109,7 +116,8 @@ private:
     QStringList mFiles;
     QMap<QString, Item> mData;
 
-    QGeoPath mTrack;
+    QList<QGeoPositionInfo> mTrack;
+    QGeoPath mPath;
     QGeoCoordinate mCenter;
     qreal mZoom = 3;
 

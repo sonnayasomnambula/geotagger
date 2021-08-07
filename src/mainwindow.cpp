@@ -73,6 +73,22 @@ MainWindow::MainWindow(QWidget* parent)
         ui->progressBar->setVisible(i != total);
     });
     ui->progressBar->hide();
+    connect(mModel, &Model::trackChanged, this, [this]{
+        const auto& track = mModel->track();
+        if (track.isEmpty()) {
+            QMessageBox::warning(this, "", tr("The track is empty!"));
+            return;
+        }
+
+        QTime start = track.first().timestamp().time();
+        QTime finish = track.last().timestamp().time();
+
+        ui->startTime->setText(start.toString());
+        ui->finishTime->setText(finish.toString());
+
+        if (start.isNull() || finish.isNull())
+            QMessageBox::warning(this, "", tr("No time information in the track!"));
+    });
 
     // playing with size policy and stretch factor didn't work
     ui->splitter->setSizes({860, 345});
@@ -122,7 +138,6 @@ void MainWindow::selectionChanged()
     QString fileName = mModel->data(selection.last(), Model::Role::Path).toString();
     QPixmap pix(fileName);
     ui->picture->setPixmap(pix.scaledToWidth(ui->picture->width()));
-
     ui->pictureDetails->setText(QString("%1 (%2x%3, %4)")
                                 .arg(fileName)
                                 .arg(pix.width())
@@ -142,34 +157,15 @@ void MainWindow::on_actionLoadTrack_triggered()
     directory = QFileInfo(name).absoluteDir().absolutePath();
     settings.dirs.gpx.save(directory);
 
-    openTrack(name);
-}
-
-bool MainWindow::openTrack(const QString& name)
-{
     GPX::Loader loader;
     if (!loader.load(name)) {
         QMessageBox::warning(this, "", loader.lastError());
-        return false;
+        return;
     }
 
-    mModel->setTrack(loader.geoPath());
+    mModel->setTrack(loader.track());
     mModel->setCenter(loader.center());
     mModel->setZoom(9); // TODO
-
-    QTime start = loader.startTime().time();
-    QTime finish = loader.finishTime().time();
-
-    ui->startTime->setText(start.isNull() ? tr("NaN") : start.toString());
-    ui->finishTime->setText(finish.isNull() ? tr("NaN") : finish.toString());
-
-    if (start.isNull() || finish.isNull())
-    {
-        QMessageBox::warning(this, "", tr("No time information in the track!"));
-        return false;
-    }
-
-    return true;
 }
 
 void MainWindow::on_actionAddPhotos_triggered()

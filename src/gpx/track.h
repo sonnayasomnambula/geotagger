@@ -4,26 +4,11 @@
 #include <QGeoPositionInfo>
 #include <QList>
 
-namespace GPX {
-
-class Track
+namespace GPX
 {
-public:
-    using Segment = QList<QGeoPositionInfo>;
 
-    void clear();
-    void setName(const QString& name);
-    void addSegment(const Segment& segment);
-
-    const QList<Segment>& segments() const { return mSegments; }
-
-    QDateTime startTime() const;
-    QDateTime finishTime() const;
-
-private:
-    QList<Segment> mSegments;
-    QString mName;
-};
+using Segment = QList<QGeoPositionInfo>;
+using Track = QList<Segment>;
 
 } // namespace GPX
 

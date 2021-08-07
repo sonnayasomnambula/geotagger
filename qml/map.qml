@@ -23,8 +23,8 @@ Rectangle {
             target: controller
             function onTrackChanged() {
                 var lines = []
-                for(var i = 0; i < controller.track.size(); i++){
-                    lines[i] = controller.track.coordinateAt(i)
+                for(var i = 0; i < controller.path.size(); i++){
+                    lines[i] = controller.path.coordinateAt(i)
                 }
                 track.path = lines;
             }

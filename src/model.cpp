@@ -10,6 +10,7 @@
 #include <sigvdr.de/qexifimageheader.h>
 
 #include "gpx/loader.h"
+#include "gpx/track.h"
 
 using Exif = QExifImageHeader;
 
@@ -103,12 +104,18 @@ bool Model::setFiles(const QStringList & files)
     return true;
 }
 
-void Model::setTrack(const QGeoPath& geoPath)
+void Model::setTrack(const GPX::Track& track)
 {
-    if (geoPath != mTrack) {
-        mTrack = geoPath;
-        emit trackChanged();
-    }
+    mTrack.clear();
+    mPath.clearPath();
+
+    for (const auto& segment: track)
+        mTrack.append(segment);
+
+    for (const auto& point: mTrack)
+        mPath.addCoordinate(point.coordinate());
+
+    emit trackChanged();
 }
 
 void Model::setCenter(const QGeoCoordinate& center)
@@ -213,6 +220,20 @@ QVariant Model::data(const QModelIndex &index, int role) const
         return item.pixmap;
 
     return {};
+}
+
+void Model::guessPhotoCoordinates()
+{
+    if (mPath.isEmpty()) return;
+
+    beginResetModel();
+    for (const auto& key: mData.keys())
+    {
+        Item& item = mData[key];
+        if (item.flags & Item::Flags::HaveGps)
+            continue;
+    }
+    endResetModel();
 }
 
 Model::Item Model::item(int row) const

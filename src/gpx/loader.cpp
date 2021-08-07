@@ -77,11 +77,11 @@ bool GPX::Loader::load(const QString & url)
                         auto node = trkNode.child();
                         if (node.isCalled("name") && node.read())
                         {
-                            mTrack.setName(node.value().toString());
+//                            mTrack.setName(node.value().toString());
                         }
                         if (node.isCalled("trkseg"))
                         {
-                            GPX::Track::Segment segment;
+                            GPX::Segment segment;
                             auto& segmentNode = node;
                             while (segmentNode.readNextStartElement())
                             {
@@ -117,7 +117,7 @@ bool GPX::Loader::load(const QString & url)
                                     stat.add(coord.latitude(), coord.longitude());
                                 }
                             }
-                            mTrack.addSegment(segment);
+                            mTrack.append(segment);
                         }
                     }
                 }
@@ -128,20 +128,6 @@ bool GPX::Loader::load(const QString & url)
     mCenter = stat.center();
 
     return true;
-}
-
-QGeoPath GPX::Loader::geoPath() const
-{
-    QGeoPath path;
-    for (const GPX::Track::Segment& segment : mTrack.segments())
-    {
-        for (const auto& point : segment)
-        {
-            path.addCoordinate(point.coordinate());
-        }
-    }
-
-    return path;
 }
 
 QGeoCoordinate GPX::Loader::fromExifInfernalFormat(const QVector<QPair<quint32, quint32>> & lat, const QString & latRef, const QVector<QPair<quint32, quint32> > & lon, const QString & lonRef)
