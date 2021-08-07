@@ -50,6 +50,22 @@
          </widget>
         </item>
         <item>
+         <widget class="QProgressBar" name="progressBar">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>5</height>
+           </size>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+          <property name="textVisible">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QGroupBox" name="trackProperties">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
@@ -102,6 +118,16 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QLabel" name="pictureDetails">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </widget>
@@ -114,7 +140,7 @@
      <x>0</x>
      <y>0</y>
      <width>1227</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">

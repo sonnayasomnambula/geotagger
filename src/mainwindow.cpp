@@ -67,6 +67,12 @@ MainWindow::MainWindow(QWidget* parent)
     ui->photos->setItemDelegateForColumn(Model::TableHeader::Position, new GeoCoordinateDelegate(this));
 
     connect(ui->photos->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
+    connect(mModel, &Model::progress, this, [this](int i, int total){
+        ui->progressBar->setMaximum(total);
+        ui->progressBar->setValue(i);
+        ui->progressBar->setVisible(i != total);
+    });
+    ui->progressBar->hide();
 
     // playing with size policy and stretch factor didn't work
     ui->splitter->setSizes({860, 345});
@@ -116,6 +122,12 @@ void MainWindow::selectionChanged()
     QString fileName = mModel->data(selection.last(), Model::Role::Path).toString();
     QPixmap pix(fileName);
     ui->picture->setPixmap(pix.scaledToWidth(ui->picture->width()));
+
+    ui->pictureDetails->setText(QString("%1 (%2x%3, %4)")
+                                .arg(fileName)
+                                .arg(pix.width())
+                                .arg(pix.height())
+                                .arg(QLocale().formattedDataSize(QFileInfo(fileName).size())));
 }
 
 void MainWindow::on_actionLoadTrack_triggered()
@@ -178,6 +190,4 @@ void MainWindow::on_actionAddPhotos_triggered()
         QMessageBox::warning(this, "", mModel->lastError());
         return;
     }
-
-    mModel->setFiles(names);
 }

@@ -43,7 +43,7 @@ bool Model::setFiles(const QStringList & files)
 
         Item item;
         item.baseName = file.baseName();
-        item.lastModified = file.lastModified();
+        item.time = file.lastModified();
 
         Exif exif;
         if (!exif.loadFromJpeg(name))
@@ -63,42 +63,38 @@ bool Model::setFiles(const QStringList & files)
             QString lonRef = exif.value(Exif::GpsLongitudeRef).toString();
 
             item.position = GPX::Loader::fromExifInfernalFormat(lat, latRef, lon, lonRef);
+            item.flags.set(Item::Flags::HaveGps);
+        }
+
+        if (exif.contains(Exif::DateTime))
+        {
+            QString timeString = exif.value(Exif::DateTime).toString();
+            qDebug().noquote() << item.baseName << timeString;
+            QString pattern = "yyyy:MM:dd hh:mm:ss";
+            if (timeString.size() == pattern.size())
+            {
+                QDateTime time = QDateTime::fromString(timeString, pattern);
+                if (time.isValid())
+                {
+                    item.time = time;
+                    item.flags.set(Item::Flags::HaveShotTime);
+                }
+            }
         }
 
         {
             // TODO move to thread
-
             QPixmap pix;
             if (!pix.load(name))
-            {
                 item.pixmap = ":/img/not_available.png";
-            }
             else
-            {
-                const int a = 32;
-                if (pix.width() > pix.height())
-                    pix = pix.scaledToHeight(a);
-                else
-                    pix = pix.scaledToWidth(a);
-
-                pix = pix.copy((pix.width() - a) / 2, (pix.height() - a) / 2, a, a);
-
-                QByteArray raw;
-                QBuffer buff(&raw);
-                buff.open(QIODevice::WriteOnly);
-                pix.save(&buff, "JPEG");
-
-                QString base64("data:image/jpg;base64,");
-                base64.append(QString::fromLatin1(raw.toBase64().data()));
-
-                item.pixmap = base64;
-            }
-
-
+                item.pixmap = Pics::toBase64(Pics::thumbnail(pix, 32));
         }
 
         mFiles.append(name);
         mData.insert(name, item);
+
+        emit progress(mFiles.size(), files.size());
     }
 
     endResetModel();
@@ -193,10 +189,15 @@ QVariant Model::data(const QModelIndex &index, int role) const
         switch (index.column())
         {
         case TableHeader::Name:      return item.baseName;
-        case TableHeader::Time:      return item.lastModified;
+        case TableHeader::Time:      return item.time;
         case TableHeader::Position:  return item.position;
         default:                     return {};
         }
+    }
+
+    if (role == Qt::ToolTipRole)
+    {
+        return tooltip(path, item);
     }
 
     if (role == Role::BaseName)
@@ -220,6 +221,25 @@ Model::Item Model::item(int row) const
 
     const QString& name = mFiles.at(row);
     return mData.value(name);
+}
+
+QString Model::tooltip(const QString& path, const Model::Item& item)
+{
+    QStringList strings;
+
+    strings.append(path);
+
+    if (item.flags & Item::Flags::HaveShotTime)
+        strings.append(tr("EXIF have shot time"));
+    else
+        strings.append(tr("EXIF have no shot time"));
+
+    if (item.flags & Item::Flags::HaveGps)
+        strings.append(tr("EXIF have GPS tag"));
+    else
+        strings.append(tr("EXIF have no GPS tag"));
+
+    return strings.join("\n");
 }
 
 QHash<int, QByteArray> Model::roleNames() const
@@ -249,4 +269,37 @@ QVariant Model::TableHeader::name(int section)
     }
 
     return {};
+}
+
+QPixmap Pics::thumbnail(const QPixmap& pixmap, int size)
+{
+    QPixmap pic = (pixmap.width() > pixmap.height()) ? pixmap.scaledToHeight(size) : pixmap.scaledToWidth(size);
+    return pic.copy((pic.width() - size) / 2, (pic.height() - size) / 2, size, size);
+}
+
+QString Pics::toBase64(const QPixmap& pixmap)
+{
+    QByteArray raw;
+    QBuffer buff(&raw);
+    buff.open(QIODevice::WriteOnly);
+    pixmap.save(&buff, "JPEG");
+
+    QString base64("data:image/jpg;base64,");
+    base64.append(QString::fromLatin1(raw.toBase64().data()));
+    return base64;
+}
+
+void Model::Item::Flags::set(Model::Item::Flags::Value v)
+{
+    mFlags |= static_cast<int>(v);
+}
+
+void Model::Item::Flags::unset(Model::Item::Flags::Value v)
+{
+    mFlags &= ~static_cast<int>(v);
+}
+
+bool Model::Item::Flags::operator &(Model::Item::Flags::Value v) const
+{
+    return mFlags & static_cast<int>(v);
 }

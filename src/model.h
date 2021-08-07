@@ -36,6 +36,7 @@ signals:
     void centerChanged();
     void zoomChanged();
     void filesChanged();
+    void progress(int i, int total);
 
 public:
     explicit Model(QObject* parent = nullptr);
@@ -80,12 +81,30 @@ private:
     struct Item
     {
         QString baseName;
-        QDateTime lastModified;
+        QDateTime time; // shot time from EXIF or last modified
         GeoPoint position;
-        QString pixmap;
+        QString pixmap; // base64 thumbnail
+
+        class Flags
+        {
+            int mFlags = 0;
+        public:
+            enum Value
+            {
+                NoFlags = 0x00,
+                HaveShotTime  = 0x01,
+                HaveGps   = 0x02,
+            };
+
+            void set(Value v);
+            void unset(Value v);
+            bool operator &(Value v) const;
+        } flags;
     };
 
     Item item(int row) const;
+
+    static QString tooltip(const QString & path, const Item& item);
 
     QStringList mFiles;
     QMap<QString, Item> mData;
@@ -96,5 +115,11 @@ private:
 
     QStringList mErrors;
 };
+
+namespace Pics
+{
+QPixmap thumbnail(const QPixmap& pixmap, int size);
+QString toBase64(const QPixmap& pixmap);
+}
 
 #endif // MODEL_H
