@@ -11,6 +11,8 @@ class QGeoPath;
 namespace GPX
 {
 
+QGeoCoordinate interpolated(const QGeoPositionInfo& before, const QGeoPositionInfo& after, const QDateTime time);
+
 class Loader : public QObject
 {
     Q_OBJECT

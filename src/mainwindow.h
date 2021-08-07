@@ -11,6 +11,7 @@ QT_END_NAMESPACE
 
 class Controller;
 class Model;
+class TimeAdjustWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -23,6 +24,7 @@ public:
 private slots:
     void on_actionLoadTrack_triggered();
     void on_actionAddPhotos_triggered();
+    void on_actionAdjust_photo_timestamp_toggled(bool toggled);
 
 private:
     void closeEvent(QCloseEvent* e) override;

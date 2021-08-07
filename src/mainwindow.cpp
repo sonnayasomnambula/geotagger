@@ -13,9 +13,11 @@
 #include <QDateTime>
 #include <QTime>
 
+#include "gpx/loader.h"
+
 #include "abstractsettings.h"
 #include "model.h"
-#include "gpx/loader.h"
+#include "timeadjustwidget.h"
 
 struct Settings : AbstractSettings
 {
@@ -52,10 +54,10 @@ public:
     }
 };
 
-MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow),
-      mModel(new Model(this))
+MainWindow::MainWindow(QWidget* parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow),
+    mModel(new Model(this))
 {
     ui->setupUi(this);
     QQmlEngine* engine = ui->map->engine();
@@ -89,6 +91,11 @@ MainWindow::MainWindow(QWidget* parent)
         if (start.isNull() || finish.isNull())
             QMessageBox::warning(this, "", tr("No time information in the track!"));
     });
+    connect(ui->timeAdjistWidget, &TimeAdjustWidget::changed, this, [this]{
+        mModel->setTimeAdjust(ui->timeAdjistWidget->value());
+        mModel->guessPhotoCoordinates();
+    });
+    ui->timeAdjistWidget->hide();
 
     // playing with size policy and stretch factor didn't work
     ui->splitter->setSizes({860, 345});
@@ -186,4 +193,11 @@ void MainWindow::on_actionAddPhotos_triggered()
         QMessageBox::warning(this, "", mModel->lastError());
         return;
     }
+}
+
+void MainWindow::on_actionAdjust_photo_timestamp_toggled(bool toggled)
+{
+    ui->timeAdjistWidget->setVisible(toggled);
+    if (ui->timeAdjistWidget->isVisible())
+        ui->timeAdjistWidget->setFocus();
 }

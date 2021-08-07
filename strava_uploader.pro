@@ -1,6 +1,6 @@
 QT       += core gui widgets quick location positioning quickwidgets
 
-CONFIG += c++11
+CONFIG += c++17
 
 SOURCES += \
     src/3rdparty/sigvdr.de/qexifimageheader.cpp \
@@ -9,6 +9,7 @@ SOURCES += \
     src/main.cpp \
     src/mainwindow.cpp \
     src/model.cpp \
+    src/timeadjustwidget.cpp \
     src/xml/xmlnode.cpp \
     src/xml/xmlnodereader.cpp
 
@@ -19,11 +20,13 @@ HEADERS += \
     src/gpx/track.h \
     src/mainwindow.h \
     src/model.h \
+    src/timeadjustwidget.h \
     src/xml/xmlnode.h \
     src/xml/xmlnodereader.h
 
 FORMS += \
-    src/mainwindow.ui
+    src/mainwindow.ui \
+    src/timeadjustwidget.ui
 
 INCLUDEPATH += \
     src \

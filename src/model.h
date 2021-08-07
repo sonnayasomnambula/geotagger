@@ -49,6 +49,8 @@ public:
     void setCenter(const QGeoCoordinate& center);
     void setZoom(int zoom);
 
+    void setTimeAdjust(qint64 timeAdjust);
+
     const QList<QGeoPositionInfo>& track() const { return mTrack; }
 
     Q_INVOKABLE QGeoCoordinate coordinate(const QString& name) const;
@@ -115,6 +117,7 @@ private:
 
     QStringList mFiles;
     QMap<QString, Item> mData;
+    qint64 mTimeAdjust = 0; // photo timestamp adjustment, seconds
 
     QList<QGeoPositionInfo> mTrack;
     QGeoPath mPath;

@@ -50,6 +50,9 @@
          </widget>
         </item>
         <item>
+         <widget class="TimeAdjustWidget" name="timeAdjistWidget" native="true"/>
+        </item>
+        <item>
          <widget class="QProgressBar" name="progressBar">
           <property name="maximumSize">
            <size>
@@ -150,7 +153,14 @@
     <addaction name="actionLoadTrack"/>
     <addaction name="actionAddPhotos"/>
    </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="actionAdjust_photo_timestamp"/>
+   </widget>
    <addaction name="menu_File"/>
+   <addaction name="menu_Edit"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionLoadTrack">
@@ -163,12 +173,26 @@
     <string>&amp;Add photos...</string>
    </property>
   </action>
+  <action name="actionAdjust_photo_timestamp">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Adjust photo timestamp...</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>QQuickWidget</class>
    <extends>QWidget</extends>
    <header location="global">QtQuickWidgets/QQuickWidget</header>
+  </customwidget>
+  <customwidget>
+   <class>TimeAdjustWidget</class>
+   <extends>QWidget</extends>
+   <header>timeadjustwidget.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

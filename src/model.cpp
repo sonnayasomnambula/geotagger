@@ -23,6 +23,8 @@ GeoPoint::GeoPoint(const QGeoCoordinate & coord) :
 Model::Model(QObject *parent)
     : QAbstractListModel(parent)
 {
+    connect(this, &Model::filesChanged, this, &Model::guessPhotoCoordinates);
+    connect(this, &Model::trackChanged, this, &Model::guessPhotoCoordinates);
 }
 
 bool Model::setFiles(const QStringList & files)
@@ -203,8 +205,21 @@ QVariant Model::data(const QModelIndex &index, int role) const
     }
 
     if (role == Qt::ToolTipRole)
-    {
         return tooltip(path, item);
+
+
+    if (role == Qt::ForegroundRole)
+    {
+        // TODO use palette?
+        switch (index.column())
+        {
+        case TableHeader::Time:
+            return QColor(item.flags & Item::Flags::HaveShotTime ? Qt::black : Qt::red);
+        case TableHeader::Position:
+            return QColor(item.flags & Item::Flags::HaveGps ? Qt::black : Qt::gray);
+        default:
+            return QColor(Qt::black);
+        }
     }
 
     if (role == Role::BaseName)
@@ -224,14 +239,28 @@ QVariant Model::data(const QModelIndex &index, int role) const
 
 void Model::guessPhotoCoordinates()
 {
-    if (mPath.isEmpty()) return;
+    if (mPath.isEmpty() || mData.isEmpty()) return;
 
     beginResetModel();
     for (const auto& key: mData.keys())
     {
         Item& item = mData[key];
+        if (item.time.isNull())
+            continue;
         if (item.flags & Item::Flags::HaveGps)
             continue;
+
+        auto i = std::find_if(mTrack.begin(), mTrack.end(), [time = item.time.addSecs(mTimeAdjust)](const QGeoPositionInfo& info) {
+            return info.timestamp() > time; });
+        if (i == mTrack.begin() || i == mTrack.end())
+            continue;
+        const QGeoPositionInfo& after = *i;
+        const QGeoPositionInfo& before = *(--i);
+        qDebug().noquote() << item.baseName << "found" <<
+                              before.timestamp().time().toString() <<
+                              item.time.time().toString() <<
+                              after.timestamp().time().toString();
+        item.position = GeoPoint(GPX::interpolated(before, after, item.time.addSecs(mTimeAdjust)));
     }
     endResetModel();
 }
@@ -261,6 +290,11 @@ QString Model::tooltip(const QString& path, const Model::Item& item)
         strings.append(tr("EXIF have no GPS tag"));
 
     return strings.join("\n");
+}
+
+void Model::setTimeAdjust(qint64 timeAdjust)
+{
+    mTimeAdjust = timeAdjust;
 }
 
 QHash<int, QByteArray> Model::roleNames() const
