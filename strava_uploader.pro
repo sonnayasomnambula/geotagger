@@ -9,6 +9,7 @@ SOURCES += \
     src/main.cpp \
     src/mainwindow.cpp \
     src/model.cpp \
+    src/pixmaplabel.cpp \
     src/timeadjustwidget.cpp \
     src/xml/xmlnode.cpp \
     src/xml/xmlnodereader.cpp
@@ -20,6 +21,7 @@ HEADERS += \
     src/gpx/track.h \
     src/mainwindow.h \
     src/model.h \
+    src/pixmaplabel.h \
     src/timeadjustwidget.h \
     src/xml/xmlnode.h \
     src/xml/xmlnodereader.h

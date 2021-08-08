@@ -4,8 +4,8 @@
 #include <QAbstractListModel>
 #include <QDateTime>
 #include <QGeoCoordinate>
-#include <QGeoPositionInfo>
 #include <QGeoPath>
+#include <QGeoPositionInfo>
 #include <QPixmap>
 #include <QPointF>
 #include <QQmlEngine>
@@ -13,9 +13,8 @@
 
 #include "gpx/track.h"
 
-class GeoPoint : public QPointF
+struct GeoPoint : QPointF
 {
-public:
     using QPointF::QPointF;
     GeoPoint(const QPointF& point) : QPointF(point) {}
     GeoPoint(const QGeoCoordinate& coord);
@@ -30,26 +29,28 @@ class Model : public QAbstractListModel
     QML_ELEMENT
 
     Q_PROPERTY(QGeoPath path MEMBER mPath NOTIFY trackChanged)
+    Q_PROPERTY(QStringList photos MEMBER mPhotos WRITE setPhotos NOTIFY photosChanged)
     Q_PROPERTY(QGeoCoordinate center MEMBER mCenter WRITE setCenter NOTIFY centerChanged)
     Q_PROPERTY(qreal zoom MEMBER mZoom WRITE setZoom NOTIFY zoomChanged)
-    Q_PROPERTY(QStringList files MEMBER mFiles WRITE setFiles NOTIFY filesChanged)
 
 signals:
     void trackChanged();
+    void photosChanged();
     void centerChanged();
     void zoomChanged();
-    void filesChanged();
     void progress(int i, int total);
 
 public:
     explicit Model(QObject* parent = nullptr);
 
-    bool setFiles(const QStringList& files);
+    using FilePath = QString;
+
     void setTrack(const GPX::Track& track);
+    bool setPhotos(const QList<FilePath>& files);
     void setCenter(const QGeoCoordinate& center);
     void setZoom(int zoom);
 
-    void setTimeAdjust(qint64 timeAdjust);
+    void setTimeAdjust(qint64 timeAdjust) { mTimeAdjust = timeAdjust; }
 
     const QList<QGeoPositionInfo>& track() const { return mTrack; }
 
@@ -87,36 +88,30 @@ protected:
     QHash<int, QByteArray> roleNames() const override;
 
 private:
-    struct Item
+    struct Photo
     {
         QString baseName;
         QDateTime time; // shot time from EXIF or last modified
         GeoPoint position;
         QString pixmap; // base64 thumbnail
+        int flags = 0;
 
-        class Flags
+        struct Exif
         {
-            int mFlags = 0;
-        public:
-            enum Value
+            enum
             {
-                NoFlags = 0x00,
-                HaveShotTime  = 0x01,
-                HaveGps   = 0x02,
+                HaveShotTime    = 0x01,
+                HaveGps         = 0x02,
             };
-
-            void set(Value v);
-            void unset(Value v);
-            bool operator &(Value v) const;
-        } flags;
+        };
     };
 
-    Item item(int row) const;
+    Photo item(int row) const;
 
-    static QString tooltip(const QString & path, const Item& item);
+    static QString tooltip(const QString & path, const Photo& item);
 
-    QStringList mFiles;
-    QMap<QString, Item> mData;
+    QList<FilePath> mPhotos;
+    QMap<FilePath, Photo> mData;
     qint64 mTimeAdjust = 0; // photo timestamp adjustment, seconds
 
     QList<QGeoPositionInfo> mTrack;
@@ -127,10 +122,5 @@ private:
     QStringList mErrors;
 };
 
-namespace Pics
-{
-QPixmap thumbnail(const QPixmap& pixmap, int size);
-QString toBase64(const QPixmap& pixmap);
-}
 
 #endif // MODEL_H

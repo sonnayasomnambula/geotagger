@@ -188,7 +188,7 @@ void MainWindow::on_actionAddPhotos_triggered()
     directory = QFileInfo(names.first()).absoluteDir().absolutePath();
     settings.dirs.photo.save(directory);
 
-    if (!mModel->setFiles(names))
+    if (!mModel->setPhotos(names))
     {
         QMessageBox::warning(this, "", mModel->lastError());
         return;

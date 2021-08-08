@@ -1,8 +1,7 @@
 #ifndef GPX_LOADER_H
 #define GPX_LOADER_H
 
-#include <QObject>
-#include <QQmlEngine>
+#include <QCoreApplication>
 
 #include "track.h"
 
@@ -13,16 +12,13 @@ namespace GPX
 
 QGeoCoordinate interpolated(const QGeoPositionInfo& before, const QGeoPositionInfo& after, const QDateTime time);
 
-class Loader : public QObject
+class Loader
 {
-    Q_OBJECT
-    QML_ELEMENT
+    Q_DECLARE_TR_FUNCTIONS(Loader)
 
 public:
-    using QObject::QObject;
-
-    Q_INVOKABLE bool load(const QString& url);
-    Q_INVOKABLE QString lastError() const { return mLastError; }
+    bool load(const QString& url);
+    QString lastError() const { return mLastError; }
 
     Track track() const { return mTrack; }
     QGeoCoordinate center() const { return mCenter; }

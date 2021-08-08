@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Strava Uploader 0.1</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -112,7 +112,19 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="picture">
+         <widget class="PixmapLabel" name="picture">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>200</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>300</height>
+           </size>
+          </property>
           <property name="text">
            <string>&lt;picture&gt;</string>
           </property>
@@ -193,6 +205,11 @@
    <extends>QWidget</extends>
    <header>timeadjustwidget.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PixmapLabel</class>
+   <extends>QLabel</extends>
+   <header>pixmaplabel.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

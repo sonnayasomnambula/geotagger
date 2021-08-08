@@ -15,28 +15,20 @@
 
 #include "xml/xmlnodereader.h"
 
+inline double linear_interpolation(double v1, double v2, double passed) {
+    Q_ASSERT(passed >= 0. && passed < 1.);
+    return v1 + (v2 - v1) * passed;
+}
 
 QGeoCoordinate GPX::interpolated(const QGeoPositionInfo& before, const QGeoPositionInfo& after, const QDateTime time)
 {
     double total = before.timestamp().secsTo(after.timestamp());
     double passed = before.timestamp().secsTo(time);
-    passed /= total;
+    passed /= total; // [0; 1)
 
-//    auto interpolate = [](double v1, double v2, double passed) {
-//        return v1 + (v2 - v1) * passed;
-//    };
-
-    double lat1 = before.coordinate().latitude();
-    double lat2 = after.coordinate().latitude();
-    double lat = lat1 + (lat2 - lat1) * passed;
-
-    double lon1 = before.coordinate().longitude();
-    double lon2 = after.coordinate().longitude();
-    double lon = lon1 + (lon2 - lon1) * passed;
-
-    double alt1 = before.coordinate().altitude();
-    double alt2 = after.coordinate().altitude();
-    double alt = alt1 + (alt2 - alt1) * passed;
+    double lat = linear_interpolation(before.coordinate().latitude(), after.coordinate().latitude(), passed);
+    double lon = linear_interpolation(before.coordinate().longitude(), after.coordinate().longitude(), passed);
+    double alt = linear_interpolation(before.coordinate().altitude(), after.coordinate().altitude(), passed);
 
     return QGeoCoordinate(lat, lon, alt);
 }
