@@ -82,6 +82,8 @@ public:
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
+    QModelIndex index(const QString& data);
+
     void guessPhotoCoordinates();
 
 protected:

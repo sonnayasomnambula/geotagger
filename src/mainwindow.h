@@ -11,6 +11,7 @@ QT_END_NAMESPACE
 
 class Controller;
 class Model;
+class SelectionWatcher;
 class TimeAdjustWidget;
 
 class MainWindow : public QMainWindow
@@ -20,6 +21,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
+
+    void restoreSession(const QString& directory);
 
 private slots:
     void on_actionLoadTrack_triggered();
@@ -32,9 +35,13 @@ private:
     void loadSettings();
     void saveSettings();
 
-    void selectionChanged();
+    bool loadGPX(const QString& fileName);
+    bool loadPhotos(const QStringList & fileNames);
+
+    void onCurrentChanged(const QModelIndex& index);
 
     Ui::MainWindow* ui = nullptr;
     Model* mModel = nullptr;
+    SelectionWatcher* mSelection = nullptr;
 };
 #endif // MAINWINDOW_H

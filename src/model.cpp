@@ -258,6 +258,14 @@ QVariant Model::data(const QModelIndex &index, int role) const
     return {};
 }
 
+QModelIndex Model::index(const QString& data)
+{
+    int row = mPhotos.indexOf(data);
+    if (row < 0) return {};
+
+    return QAbstractListModel::index(row, 0);
+}
+
 void Model::guessPhotoCoordinates()
 {
     if (mPath.isEmpty() || mData.isEmpty()) return;
@@ -277,10 +285,10 @@ void Model::guessPhotoCoordinates()
             continue;
         const QGeoPositionInfo& after = *i;
         const QGeoPositionInfo& before = *(--i);
-        qDebug().noquote() << item.baseName << "found" <<
-                              before.timestamp().time().toString() <<
-                              item.time.time().toString() <<
-                              after.timestamp().time().toString();
+//        qDebug().noquote() << item.baseName << "found" <<
+//                              before.timestamp().time().toString() <<
+//                              item.time.time().toString() <<
+//                              after.timestamp().time().toString();
         item.position = GeoPoint(GPX::interpolated(before, after, item.time.addSecs(mTimeAdjust)));
     }
     endResetModel();
@@ -317,6 +325,7 @@ QHash<int, QByteArray> Model::roleNames() const
 {
     QHash<int, QByteArray> roles;
 
+    roles[Role::Path] = "_path_";
     roles[Role::BaseName] = "_base_name_";
     roles[Role::Latitude] = "_latitude_";
     roles[Role::Longitude] = "_longitude_";

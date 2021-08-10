@@ -11,12 +11,14 @@
 #include <QStyledItemDelegate>
 #include <QQmlContext>
 #include <QDateTime>
+#include <QDirIterator>
 #include <QTime>
 
 #include "gpx/loader.h"
 
 #include "abstractsettings.h"
 #include "model.h"
+#include "selectionwatcher.h"
 #include "timeadjustwidget.h"
 
 struct Settings : AbstractSettings
@@ -57,18 +59,28 @@ public:
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    mModel(new Model(this))
+    mModel(new Model),
+    mSelection(new SelectionWatcher)
 {
     ui->setupUi(this);
     QQmlEngine* engine = ui->map->engine();
     engine->rootContext()->setContextProperty("controller", mModel);
+    engine->rootContext()->setContextProperty("selection", mSelection);
     ui->map->setSource(QUrl("qrc:///qml/map.qml"));
 
     ui->photos->setModel(mModel);
     ui->photos->setItemDelegateForColumn(Model::TableHeader::Time, new TimeDelegate(this));
     ui->photos->setItemDelegateForColumn(Model::TableHeader::Position, new GeoCoordinateDelegate(this));
 
-    connect(ui->photos->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
+    connect(ui->photos->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onCurrentChanged);
+//    connect(mSelection, &SelectionWatcher::currentChanged, mModel, &Model::photosChanged);
+    connect(mSelection, &SelectionWatcher::currentChanged, this, [this](const QString& path){
+        QString current = mModel->data(ui->photos->currentIndex(), Model::Role::Path).toString();
+        if (path != current) {
+            ui->photos->setCurrentIndex(mModel->index(path));
+        }
+    });
+
     connect(mModel, &Model::progress, this, [this](int i, int total){
         ui->progressBar->setMaximum(total);
         ui->progressBar->setValue(i);
@@ -111,6 +123,33 @@ void MainWindow::closeEvent(QCloseEvent*)
 MainWindow::~MainWindow()
 {
     delete ui;
+
+    // QML-used objects needs to live long enough for the QML engine to complete all the calls
+    // so don't pass 'this' to the ctor and delete it later
+
+    mModel->deleteLater();
+    mSelection->deleteLater();
+}
+
+void MainWindow::restoreSession(const QString& directory)
+{
+    QString gpxFile;
+    QStringList photos;
+
+    QDirIterator i(directory);
+    while (i.hasNext())
+    {
+        QFileInfo file(i.next());
+        if (file.suffix().contains("gpx", Qt::CaseInsensitive))
+            gpxFile = file.absoluteFilePath();
+        if (file.suffix().contains("jpg", Qt::CaseInsensitive))
+            photos.append(file.absoluteFilePath());
+    }
+
+    std::sort(photos.begin(), photos.end());
+
+    loadGPX(gpxFile);
+    loadPhotos(photos);
 }
 
 void MainWindow::loadSettings()
@@ -133,16 +172,15 @@ void MainWindow::saveSettings()
     settings.window.photosHeaderState.save(ui->photos->header());
 }
 
-void MainWindow::selectionChanged()
+void MainWindow::onCurrentChanged(const QModelIndex& index)
 {
-    auto selection = ui->photos->selectionModel()->selectedIndexes();
-    if (selection.isEmpty())
+    if (!index.isValid())
     {
         ui->picture->setPixmap({});
         return;
     }
 
-    QString fileName = mModel->data(selection.last(), Model::Role::Path).toString();
+    QString fileName = mModel->data(index, Model::Role::Path).toString();
     QPixmap pix(fileName);
     ui->picture->setPixmap(pix.scaledToWidth(ui->picture->width()));
     ui->pictureDetails->setText(QString("%1 (%2x%3, %4)")
@@ -150,6 +188,7 @@ void MainWindow::selectionChanged()
                                 .arg(pix.width())
                                 .arg(pix.height())
                                 .arg(QLocale().formattedDataSize(QFileInfo(fileName).size())));
+    mSelection->setCurrent(fileName);
 }
 
 void MainWindow::on_actionLoadTrack_triggered()
@@ -164,15 +203,23 @@ void MainWindow::on_actionLoadTrack_triggered()
     directory = QFileInfo(name).absoluteDir().absolutePath();
     settings.dirs.gpx.save(directory);
 
+    loadGPX(name);
+}
+
+bool MainWindow::loadGPX(const QString & fileName)
+{
+    if (fileName.isEmpty()) return false;
+
     GPX::Loader loader;
-    if (!loader.load(name)) {
+    if (!loader.load(fileName)) {
         QMessageBox::warning(this, "", loader.lastError());
-        return;
+        return false;
     }
 
     mModel->setTrack(loader.track());
     mModel->setCenter(loader.center());
     mModel->setZoom(9); // TODO
+    return true;
 }
 
 void MainWindow::on_actionAddPhotos_triggered()
@@ -188,11 +235,20 @@ void MainWindow::on_actionAddPhotos_triggered()
     directory = QFileInfo(names.first()).absoluteDir().absolutePath();
     settings.dirs.photo.save(directory);
 
-    if (!mModel->setPhotos(names))
+    loadPhotos(names);
+}
+
+bool MainWindow::loadPhotos(const QStringList& fileNames)
+{
+    if (!mModel->setPhotos(fileNames))
     {
-        QMessageBox::warning(this, "", mModel->lastError());
-        return;
+        QString error = mModel->lastError();
+        qWarning().noquote() << error;
+        QMessageBox::warning(this, "", error);
+        return false;
     }
+
+    return true;
 }
 
 void MainWindow::on_actionAdjust_photo_timestamp_toggled(bool toggled)

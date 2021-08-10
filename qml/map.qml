@@ -50,7 +50,7 @@ Rectangle {
 
                     Text {
                         text: _base_name_
-                        color: "black"
+                        color: selection.current == _path_ ? "blue" : "black"
                         anchors.horizontalCenter: pic.horizontalCenter
                         anchors.bottom: pic.top
                         anchors.topMargin: 5
@@ -58,7 +58,7 @@ Rectangle {
 
                     ShapePath {
                         id: shape
-                        strokeColor: "black"
+                        strokeColor: selection.current == _path_ ? "blue" : "black"
 
                         property real half: thumbnail.width * 0.5
                         property real quarter: thumbnail.width * 0.25
@@ -77,6 +77,11 @@ Rectangle {
                         PathLine { x: shape.bottomRight.x; y: shape.bottomRight.y }
                         PathLine { x: shape.bottomCenter.x; y: shape.bottomCenter.y }
                         PathLine { x: shape.bottomLeft.x; y: shape.bottomLeft.y }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: { selection.current = _path_ }
                     }
                 }
             }

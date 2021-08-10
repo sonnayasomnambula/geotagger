@@ -10,6 +10,7 @@ SOURCES += \
     src/mainwindow.cpp \
     src/model.cpp \
     src/pixmaplabel.cpp \
+    src/selectionwatcher.cpp \
     src/timeadjustwidget.cpp \
     src/xml/xmlnode.cpp \
     src/xml/xmlnodereader.cpp
@@ -22,6 +23,7 @@ HEADERS += \
     src/mainwindow.h \
     src/model.h \
     src/pixmaplabel.h \
+    src/selectionwatcher.h \
     src/timeadjustwidget.h \
     src/xml/xmlnode.h \
     src/xml/xmlnodereader.h
