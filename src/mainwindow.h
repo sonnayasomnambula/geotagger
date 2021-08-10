@@ -26,7 +26,7 @@ public:
 
 private slots:
     void on_actionLoadTrack_triggered();
-    void on_actionAddPhotos_triggered();
+    void on_actionLoadPhotos_triggered();
     void on_actionAdjust_photo_timestamp_toggled(bool toggled);
 
 private:
@@ -39,6 +39,8 @@ private:
     bool loadPhotos(const QStringList & fileNames);
 
     void onCurrentChanged(const QModelIndex& index);
+
+    bool warn(const QString& title, const QString& message);
 
     Ui::MainWindow* ui = nullptr;
     Model* mModel = nullptr;

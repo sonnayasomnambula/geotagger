@@ -182,13 +182,20 @@ void MainWindow::onCurrentChanged(const QModelIndex& index)
 
     QString fileName = mModel->data(index, Model::Role::Path).toString();
     QPixmap pix(fileName);
-    ui->picture->setPixmap(pix.scaledToWidth(ui->picture->width()));
+    ui->picture->setPixmap(pix);
     ui->pictureDetails->setText(QString("%1 (%2x%3, %4)")
                                 .arg(fileName)
                                 .arg(pix.width())
                                 .arg(pix.height())
                                 .arg(QLocale().formattedDataSize(QFileInfo(fileName).size())));
     mSelection->setCurrent(fileName);
+}
+
+bool MainWindow::warn(const QString& title, const QString& message)
+{
+    qWarning().nospace().noquote() << title << ": " << message;
+    QMessageBox::warning(this, title, message);
+    return false;
 }
 
 void MainWindow::on_actionLoadTrack_triggered()
@@ -206,15 +213,13 @@ void MainWindow::on_actionLoadTrack_triggered()
     loadGPX(name);
 }
 
-bool MainWindow::loadGPX(const QString & fileName)
+bool MainWindow::loadGPX(const QString& fileName)
 {
     if (fileName.isEmpty()) return false;
 
     GPX::Loader loader;
-    if (!loader.load(fileName)) {
-        QMessageBox::warning(this, "", loader.lastError());
-        return false;
-    }
+    if (!loader.load(fileName))
+        return warn(tr("Unable to load GPX file"), loader.lastError());
 
     mModel->setTrack(loader.track());
     mModel->setCenter(loader.center());
@@ -222,7 +227,7 @@ bool MainWindow::loadGPX(const QString & fileName)
     return true;
 }
 
-void MainWindow::on_actionAddPhotos_triggered()
+void MainWindow::on_actionLoadPhotos_triggered()
 {
     Settings settings;
 
@@ -241,12 +246,7 @@ void MainWindow::on_actionAddPhotos_triggered()
 bool MainWindow::loadPhotos(const QStringList& fileNames)
 {
     if (!mModel->setPhotos(fileNames))
-    {
-        QString error = mModel->lastError();
-        qWarning().noquote() << error;
-        QMessageBox::warning(this, "", error);
-        return false;
-    }
+        return warn(tr("Unable to load photos"), mModel->lastError());
 
     return true;
 }

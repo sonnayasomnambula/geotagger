@@ -20,8 +20,6 @@ int main(int argc, char *argv[])
     a.setOrganizationDomain("sonnayasomnambula.org");
     a.setApplicationVersion("0.1");
 
-    qmlRegisterType<Model>("org.sonnayasomnambula.stravauploader.model", 0, 1, "Model");
-
     MainWindow w;
     w.show();
 
