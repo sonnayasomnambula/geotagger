@@ -33,6 +33,7 @@ struct Settings : AbstractSettings
         Geometry geometry = "window/geometry";
         State splitterState = "window/splitterState";
         State photosHeaderState = "window/photosHeaderState";
+        Tag adjustTimestamp = "window/adjustTimestamp";
     } window;
 };
 
@@ -173,6 +174,7 @@ void MainWindow::loadSettings()
     settings.window.geometry.restore(this);
     settings.window.splitterState.restore(ui->splitter);
     settings.window.photosHeaderState.restore(ui->photos->header());
+    ui->actionAdjust_photo_timestamp->setChecked(settings.window.adjustTimestamp(ui->actionAdjust_photo_timestamp->isChecked()));
 }
 
 void MainWindow::saveSettings()
@@ -183,6 +185,7 @@ void MainWindow::saveSettings()
     settings.window.geometry.save(this);
     settings.window.splitterState.save(ui->splitter);
     settings.window.photosHeaderState.save(ui->photos->header());
+    settings.window.adjustTimestamp.save(ui->actionAdjust_photo_timestamp->isChecked());
 }
 
 void MainWindow::onCurrentChanged(const QModelIndex& index)
