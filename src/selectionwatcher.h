@@ -13,7 +13,9 @@ QT_END_NAMESPACE
 class SelectionWatcher : public QObject
 {
     Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
     QML_ELEMENT
+#endif
 
     Q_PROPERTY(QString current MEMBER mCurrent WRITE setCurrent NOTIFY currentChanged)
 

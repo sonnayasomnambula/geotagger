@@ -1,10 +1,10 @@
-import QtQuick 2.15
-import QtLocation 5.12
-import QtPositioning 5.12
+import QtQuick 2.0
+import QtLocation 5.6
+import QtPositioning 5.6
 import QtQuick.Shapes 1.1
 
 Rectangle {
-    anchors.fill: parent
+//    anchors.fill: parent
 
     Map {
         id: map

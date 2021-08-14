@@ -26,7 +26,9 @@ struct GeoPoint : QPointF
 class Model : public QAbstractListModel
 {
     Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
     QML_ELEMENT
+#endif
 
     Q_PROPERTY(QGeoPath path MEMBER mPath NOTIFY trackChanged)
     Q_PROPERTY(QStringList photos MEMBER mPhotos WRITE setPhotos NOTIFY photosChanged)

@@ -64,6 +64,19 @@ MainWindow::MainWindow(QWidget* parent) :
 {
     ui->setupUi(this);
     QQmlEngine* engine = ui->map->engine();
+    connect(ui->map, &QQuickWidget::statusChanged, [this](QQuickWidget::Status status){
+        if (status == QQuickWidget::Status::Error) {
+            QStringList descripton;
+            for (const auto& error: ui->map->errors())
+                descripton.append(error.toString());
+            QMessageBox::warning(this, tr("QML load failed"), descripton.join("\n"));
+        }
+    });
+    connect(ui->map, &QQuickWidget::sceneGraphError, [this](QQuickWindow::SceneGraphError, const QString& message){
+        QMessageBox::warning(this, "", message);
+    });
+
+
     engine->rootContext()->setContextProperty("controller", mModel);
     engine->rootContext()->setContextProperty("selection", mSelection);
     ui->map->setSource(QUrl("qrc:///qml/map.qml"));
