@@ -12,8 +12,6 @@ SOURCES += \
     src/pixmaplabel.cpp \
     src/selectionwatcher.cpp \
     src/timeadjustwidget.cpp \
-    src/xml/xmlnode.cpp \
-    src/xml/xmlnodereader.cpp
 
 HEADERS += \
     src/3rdparty/sigvdr.de/qexifimageheader.h \
@@ -25,8 +23,6 @@ HEADERS += \
     src/pixmaplabel.h \
     src/selectionwatcher.h \
     src/timeadjustwidget.h \
-    src/xml/xmlnode.h \
-    src/xml/xmlnodereader.h
 
 FORMS += \
     src/mainwindow.ui \

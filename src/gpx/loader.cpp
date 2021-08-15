@@ -13,8 +13,6 @@
 #include <QTextCodec>
 #include <QPointF>
 
-#include "xml/xmlnodereader.h"
-
 inline double linear_interpolation(double v1, double v2, double passed) {
     Q_ASSERT(passed >= 0. && passed < 1.);
     return v1 + (v2 - v1) * passed;
@@ -55,6 +53,16 @@ private:
     int mTotal = 0;
 };
 
+class XmlNode
+{
+    const QString mName;
+    QXmlStreamReader* mXml;
+public:
+    explicit XmlNode(const QString& name, QXmlStreamReader* xml) : mName(name), mXml(xml) {}
+    bool isStarted() const { return mXml->isStartElement() && mXml->name() == mName; }
+    bool isEnded() const { return mXml->atEnd() || (mXml->isEndElement() && mXml->name() == mName); }
+};
+
 bool GPX::Loader::load(const QString & url)
 {
     qDebug() << "Loading" << url << "...";
@@ -78,68 +86,42 @@ bool GPX::Loader::load(const QString & url)
     Statistic stat;
 
     QXmlStreamReader xml(data);
-    XmlNodeReader rootNode(&xml);
 
-    while (rootNode.readNextStartElement())
+    while (!xml.atEnd())
     {
-        auto gpxNode = rootNode.child();
-        if (gpxNode.isCalled("gpx"))
+        xml.readNextStartElement();
+//        qDebug() << xml.lineNumber() << xml.tokenString();
+
+        XmlNode trkseg("trkseg", &xml);
+        if (trkseg.isStarted())
         {
-            while (gpxNode.readNextStartElement())
+            GPX::Segment segment;
+            do
             {
-                auto trkNode = gpxNode.child();
-                if (trkNode.isCalled("trk"))
+                xml.readNext();
+//                qDebug() << xml.lineNumber() << xml.tokenString();
+                XmlNode trkpt("trkpt", &xml);
+                if (trkpt.isStarted())
                 {
-                    while (trkNode.readNextStartElement())
+                    QGeoCoordinate coord;
+                    QDateTime timestamp;
+                    coord.setLatitude(xml.attributes().value("lat").toDouble());
+                    coord.setLongitude(xml.attributes().value("lon").toDouble());
+                    do
                     {
-                        auto node = trkNode.child();
-                        if (node.isCalled("name") && node.read())
-                        {
-//                            mTrack.setName(node.value().toString());
-                        }
-                        if (node.isCalled("trkseg"))
-                        {
-                            GPX::Segment segment;
-                            auto& segmentNode = node;
-                            while (segmentNode.readNextStartElement())
-                            {
-                                auto pointNode = segmentNode.child();
-                                QGeoCoordinate coord;
-                                QDateTime timestamp;
-                                if (pointNode.isCalled("trkpt"))
-                                {
-                                    if (pointNode.readAttribute("lat", QVariant::Double))
-                                        coord.setLatitude(pointNode.value().toDouble());
-                                    if (pointNode.readAttribute("lon", QVariant::Double))
-                                        coord.setLongitude(pointNode.value().toDouble());
-                                }
-
-                                while (pointNode.readNextStartElement())
-                                {
-                                    auto pointPropsNode = pointNode.child();
-                                    if (pointPropsNode.isCalled("ele", XmlNodeReader::Requirement::NotRequired) && pointPropsNode.read(QVariant::Double))
-                                    {
-                                        coord.setAltitude(pointPropsNode.value().toDouble());
-                                    }
-                                    if (pointPropsNode.isCalled("time", XmlNodeReader::Requirement::NotRequired) && pointPropsNode.read())
-                                    {
-                                        timestamp = stringToDateTime(pointPropsNode.value().toString());
-                                    }
-                                }
-
-                                if (coord.isValid())
-                                {
-                                    QGeoPositionInfo point(coord, timestamp);
-//                                    qDebug() << point;
-                                    segment.append(point);
-                                    stat.add(coord.latitude(), coord.longitude());
-                                }
-                            }
-                            mTrack.append(segment);
-                        }
-                    }
+                        xml.readNext();
+//                        qDebug() << xml.lineNumber() << xml.tokenString();
+                        if (XmlNode("ele", &xml).isStarted())
+                            coord.setAltitude(xml.readElementText().toDouble());
+                        if (XmlNode("time", &xml).isStarted())
+                            timestamp = stringToDateTime(xml.readElementText());
+                    } while (!trkpt.isEnded());
+                    QGeoPositionInfo point(coord, timestamp);
+                    segment.append(point);
+                    stat.add(coord.latitude(), coord.longitude());
                 }
-            }
+            } while (!trkseg.isEnded());
+            mTrack.append(segment);
         }
     }
 
