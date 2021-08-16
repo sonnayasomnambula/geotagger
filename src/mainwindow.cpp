@@ -24,8 +24,8 @@
 struct Settings : AbstractSettings
 {
     struct {
-        Tag gpx = "dirs/gpx";
-        Tag photo = "dirs/photo";
+        Tag<QString> gpx = "dirs/gpx";
+        Tag<QString> photo = "dirs/photo";
     } dirs;
 
     struct {
@@ -33,8 +33,16 @@ struct Settings : AbstractSettings
         Geometry geometry = "window/geometry";
         State splitterState = "window/splitterState";
         State photosHeaderState = "window/photosHeaderState";
-        Tag adjustTimestamp = "window/adjustTimestamp";
+        Tag<bool> adjustTimestamp = "window/adjustTimestamp";
     } window;
+
+    struct {
+        Tag<int> h = "adjustTimestamp/h";
+        Tag<int> m = "adjustTimestamp/m";
+        Tag<int> s = "adjustTimestamp/s";
+    } adjustTimestamp;
+
+    Tag<bool> restoreSession = "restoreSession";
 };
 
 class TimeDelegate : public QStyledItemDelegate
@@ -113,9 +121,6 @@ MainWindow::MainWindow(QWidget* parent) :
 
         ui->startTime->setText(start.toString());
         ui->finishTime->setText(finish.toString());
-
-        if (start.isNull() || finish.isNull())
-            QMessageBox::warning(this, "", tr("No time information in the track!"));
     });
     connect(ui->timeAdjistWidget, &TimeAdjustWidget::changed, this, [this]{
         mModel->setTimeAdjust(ui->timeAdjistWidget->value());
@@ -145,25 +150,41 @@ MainWindow::~MainWindow()
     mSelection->deleteLater();
 }
 
-void MainWindow::restoreSession(const QString& directory)
+void MainWindow::restoreSession()
 {
-    QString gpxFile;
-    QStringList photos;
+    Settings settings;
 
-    QDirIterator i(directory);
-    while (i.hasNext())
+    if (!settings.restoreSession()) return;
+
+    if (settings.dirs.gpx.exists())
     {
-        QFileInfo file(i.next());
-        if (file.suffix().contains("gpx", Qt::CaseInsensitive))
-            gpxFile = file.absoluteFilePath();
-        if (file.suffix().contains("jpg", Qt::CaseInsensitive))
-            photos.append(file.absoluteFilePath());
+        QDirIterator i(settings.dirs.gpx());
+        while (i.hasNext())
+        {
+            QFileInfo file(i.next());
+            if (file.suffix().contains("gpx", Qt::CaseInsensitive))
+            {
+                loadGPX(file.absoluteFilePath());
+                break;
+            }
+        }
     }
 
-    std::sort(photos.begin(), photos.end());
-
-    loadGPX(gpxFile);
-    loadPhotos(photos);
+    if (settings.dirs.photo.exists())
+    {
+        QStringList photos;
+        QDirIterator i(settings.dirs.photo());
+        while (i.hasNext())
+        {
+            QFileInfo file(i.next());
+            if (file.suffix().contains("jpg", Qt::CaseInsensitive))
+            {
+                photos.append(file.absoluteFilePath());
+            }
+        }
+        std::sort(photos.begin(), photos.end());
+        loadPhotos(photos);
+    }
 }
 
 void MainWindow::loadSettings()
@@ -174,7 +195,13 @@ void MainWindow::loadSettings()
     settings.window.geometry.restore(this);
     settings.window.splitterState.restore(ui->splitter);
     settings.window.photosHeaderState.restore(ui->photos->header());
-    ui->actionAdjust_photo_timestamp->setChecked(settings.window.adjustTimestamp(ui->actionAdjust_photo_timestamp->isChecked()));
+    ui->actionAdjust_photo_timestamp->setChecked(settings.window.adjustTimestamp());
+
+    ui->timeAdjistWidget->setHours(settings.adjustTimestamp.h());
+    ui->timeAdjistWidget->setMinutes(settings.adjustTimestamp.m());
+    ui->timeAdjistWidget->setSeconds(settings.adjustTimestamp.s());
+
+    ui->actionRestore_session_on_startup->setChecked(settings.restoreSession());
 }
 
 void MainWindow::saveSettings()
@@ -186,6 +213,12 @@ void MainWindow::saveSettings()
     settings.window.splitterState.save(ui->splitter);
     settings.window.photosHeaderState.save(ui->photos->header());
     settings.window.adjustTimestamp.save(ui->actionAdjust_photo_timestamp->isChecked());
+
+    settings.adjustTimestamp.h.save(ui->timeAdjistWidget->hours());
+    settings.adjustTimestamp.m.save(ui->timeAdjistWidget->minutes());
+    settings.adjustTimestamp.s.save(ui->timeAdjistWidget->seconds());
+
+    settings.restoreSession.save(ui->actionRestore_session_on_startup->isChecked());
 }
 
 void MainWindow::onCurrentChanged(const QModelIndex& index)
@@ -237,6 +270,8 @@ bool MainWindow::loadGPX(const QString& fileName)
     if (!loader.load(fileName))
         return warn(tr("Unable to load GPX file"), loader.lastError());
 
+    setWindowTitle(loader.name().isEmpty() ? tr("Strava uploader 0.1") : loader.name()); // TODO extract version
+
     mModel->setTrack(loader.track());
     mModel->setCenter(loader.center());
     mModel->setZoom(9); // TODO
@@ -272,4 +307,9 @@ void MainWindow::on_actionAdjust_photo_timestamp_toggled(bool toggled)
     ui->timeAdjistWidget->setVisible(toggled);
     if (ui->timeAdjistWidget->isVisible())
         ui->timeAdjistWidget->setFocus();
+}
+
+void MainWindow::on_actionE_xit_triggered()
+{
+    close();
 }

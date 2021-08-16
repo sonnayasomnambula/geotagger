@@ -21,6 +21,7 @@ public:
     QString lastError() const { return mLastError; }
 
     Track track() const { return mTrack; }
+    QString name() const { return mName; }
     QGeoCoordinate center() const { return mCenter; }
 
     static QGeoCoordinate fromExifInfernalFormat(const QVector<QPair<quint32, quint32>>& lat,
@@ -33,6 +34,7 @@ private:
     static QDateTime stringToDateTime(const QString& s);
 
     Track mTrack;
+    QString mName;
     QGeoCoordinate mCenter;
     QString mLastError;
 };

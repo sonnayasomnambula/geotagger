@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>159</width>
-    <height>42</height>
+    <width>256</width>
+    <height>44</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -50,6 +50,13 @@
      </property>
      <property name="maximum">
       <number>59</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="clear">
+     <property name="text">
+      <string>x</string>
      </property>
     </widget>
    </item>

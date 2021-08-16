@@ -155,7 +155,7 @@
      <x>0</x>
      <y>0</y>
      <width>1227</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -164,6 +164,10 @@
     </property>
     <addaction name="actionLoadTrack"/>
     <addaction name="actionLoadPhotos"/>
+    <addaction name="separator"/>
+    <addaction name="actionRestore_session_on_startup"/>
+    <addaction name="separator"/>
+    <addaction name="actionE_xit"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -194,6 +198,22 @@
    </property>
    <property name="text">
     <string>Adjust photo &amp;timestamp...</string>
+   </property>
+  </action>
+  <action name="actionRestore_session_on_startup">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Restore session on startup</string>
+   </property>
+  </action>
+  <action name="actionE_xit">
+   <property name="text">
+    <string>E&amp;xit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+X</string>
    </property>
   </action>
  </widget>

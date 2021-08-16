@@ -22,12 +22,14 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-    void restoreSession(const QString& directory);
+    void restoreSession();
 
 private slots:
     void on_actionLoadTrack_triggered();
     void on_actionLoadPhotos_triggered();
     void on_actionAdjust_photo_timestamp_toggled(bool toggled);
+
+    void on_actionE_xit_triggered();
 
 private:
     void closeEvent(QCloseEvent* e) override;

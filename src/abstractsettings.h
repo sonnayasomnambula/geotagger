@@ -7,21 +7,22 @@
 class AbstractSettings
 {
 public:
+    template <typename T>
     class Tag
     {
     public:
         Tag(const char* key) : mKey(key) {}
+        Tag(const QString& key) : mKey(key) {}
 
-        QVariant value() const {
-            return QSettings().value(mKey);
-        }
-
-        template<typename T>
-        T operator ()(const T& defaultValue) const {
+        T value(const T& defaultValue = T()) const {
             return QSettings().value(mKey, defaultValue).template value<T>();
         }
 
-        void save(const QVariant& value) {
+        T operator ()(const T& defaultValue = T()) const {
+            return QSettings().value(mKey, defaultValue).template value<T>();
+        }
+
+        void save(const T& value) {
             QSettings().setValue(mKey, value);
         }
 
@@ -29,16 +30,28 @@ public:
             return QSettings().contains(mKey);
         }
 
-    private:
+    protected:
         const QString mKey;
+    };
+
+    class VariantTag : public Tag<QVariant>
+    {
+    public:
+        using Tag<QVariant>::Tag;
+
+        template<typename T>
+        T operator ()(const T& defaultValue) const {
+            return QSettings().value(mKey, defaultValue).template value<T>();
+        }
     };
 
     class State
     {
-        Tag mTag;
+        Tag<QByteArray> mTag;
 
     public:
         State(const char* key) : mTag(key) {}
+        State(const QString& key) : mTag(key) {}
 
         template <class Widget>
         void save(Widget* widget) {
@@ -53,10 +66,11 @@ public:
 
     class Geometry
     {
-        Tag mTag;
+        Tag<QByteArray> mTag;
 
     public:
         Geometry(const char* key) : mTag(key) {}
+        Geometry(const QString& key) : mTag(key) {}
 
         template <class Widget>
         void save(Widget* widget) {
@@ -66,6 +80,26 @@ public:
         template <class Widget>
         void restore(Widget* widget) {
             widget->restoreGeometry(mTag(widget->saveGeometry()));
+        }
+    };
+
+    class Property
+    {
+        Tag<QVariant> mTag;
+        QByteArray mPropertyName;
+
+    public:
+        Property(const char* key, const char* propertyName) : mTag(key), mPropertyName(propertyName) {}
+        Property(const QString& key, const char* propertyName) : mTag(key), mPropertyName(propertyName) {}
+
+        template <class Object>
+        void save(Object* object) {
+            mTag.save(object->property(mPropertyName));
+        }
+
+        template <class Object>
+        void restore(Object* object) {
+            object->setProperty(mPropertyName, mTag(object->property(mPropertyName)));
         }
     };
 };

@@ -56,7 +56,28 @@ private:
     int mTotal = 0;
 };
 
-bool GPX::Loader::load(const QString & url)
+class XmlElement
+{
+    QXmlStreamReader* mXml;
+    QStringList mChildren;
+
+public:
+    explicit XmlElement(QXmlStreamReader* xml) : mXml(xml) {
+        qDebug() << mXml->lineNumber() << mXml->tokenString();
+    }
+
+    ~XmlElement() { if (mXml) mXml->skipCurrentElement(); }
+
+    bool operator ==(const QString& name) {
+        if (mXml && mXml->name() == name) {
+            mXml = nullptr;
+            return true;
+        }
+        return false;
+    }
+};
+
+bool GPX::Loader::load(const QString& url)
 {
     qInfo() << "Loading" << url << "...";
 
@@ -76,30 +97,35 @@ bool GPX::Loader::load(const QString & url)
     QString data = stream.readAll();
 
     mTrack.clear();
+    mName.clear();
     Statistic stat;
 
     QXmlStreamReader xml(data);
 
     while (xml.readNextStartElement())
     {
-        qDebug() << xml.lineNumber() << xml.tokenString();
-        if (xml.name() == "gpx")
+        XmlElement gpx(&xml);
+        if (gpx == "gpx")
         {
             while (xml.readNextStartElement())
             {
-                qDebug() << xml.lineNumber() << xml.tokenString();
-                if (xml.name() == "trk")
+                XmlElement trk(&xml);
+                if (trk == "trk")
                 {
                     while (xml.readNextStartElement())
                     {
-                        qDebug() << xml.lineNumber() << xml.tokenString();
-                        if (xml.name() == "trkseg")
+                        XmlElement trkseg(&xml);
+                        if (trkseg == "name")
+                        {
+                            mName = xml.readElementText(QXmlStreamReader::SkipChildElements);
+                        }
+                        else if (trkseg == "trkseg")
                         {
                             GPX::Segment segment;
                             while (xml.readNextStartElement())
                             {
-                                qDebug() << xml.lineNumber() << xml.tokenString();
-                                if (xml.name() == "trkpt")
+                                XmlElement trkpt(&xml);
+                                if (trkpt == "trkpt")
                                 {
                                     QGeoCoordinate coord;
                                     QDateTime timestamp;
@@ -108,27 +134,28 @@ bool GPX::Loader::load(const QString & url)
 
                                     while (xml.readNextStartElement())
                                     {
-                                        qDebug() << xml.lineNumber() << xml.tokenString();
-                                        if (xml.name() == "ele")
+                                        XmlElement ele(&xml);
+                                        if (ele == "ele")
                                             coord.setAltitude(xml.readElementText().toDouble());
-                                        else if (xml.name() == "time")
+                                        else if (ele == "time")
                                             timestamp = stringToDateTime(xml.readElementText());
-                                        else
-                                            xml.skipCurrentElement();
                                     }
+
+                                    if (timestamp.isNull())
+                                        return warn(tr("No time information in the track"));
 
                                     QGeoPositionInfo point(coord, timestamp);
                                     segment.append(point);
                                     stat.add(coord.latitude(), coord.longitude());
-                                } else xml.skipCurrentElement();
+                                }
                             }
 
                             mTrack.append(segment);
-                        } else xml.skipCurrentElement();
+                        }
                     }
-                } else xml.skipCurrentElement();
+                }
             }
-        } else xml.skipCurrentElement();
+        }
     }
 
     mCenter = stat.center();
@@ -164,7 +191,7 @@ QGeoCoordinate GPX::Loader::fromExifInfernalFormat(const QVector<QPair<quint32, 
 bool GPX::Loader::warn(const QString& text)
 {
     mLastError = text;
-    qWarning().noquote() << mLastError;
+    qWarning().noquote() << "GPX::Loader:" << mLastError;
     return false;
 }
 

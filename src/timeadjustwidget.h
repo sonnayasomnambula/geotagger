@@ -20,6 +20,17 @@ public:
 
     qint64 value() const;
 
+    int hours() const;
+    int minutes() const;
+    int seconds() const;
+
+    void setHours(int value);
+    void setMinutes(int value);
+    void setSeconds(int value);
+
+private slots:
+    void on_clear_clicked();
+
 private:
     Ui::TimeAdjustWidget *ui;
 };
