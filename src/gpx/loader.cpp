@@ -13,6 +13,9 @@
 #include <QTextCodec>
 #include <QPointF>
 
+#undef qDebug
+#define qDebug QT_NO_QDEBUG_MACRO
+
 inline double linear_interpolation(double v1, double v2, double passed) {
     Q_ASSERT(passed >= 0. && passed < 1.);
     return v1 + (v2 - v1) * passed;
@@ -53,19 +56,9 @@ private:
     int mTotal = 0;
 };
 
-class XmlNode
-{
-    const QString mName;
-    QXmlStreamReader* mXml;
-public:
-    explicit XmlNode(const QString& name, QXmlStreamReader* xml) : mName(name), mXml(xml) {}
-    bool isStarted() const { return mXml->isStartElement() && mXml->name() == mName; }
-    bool isEnded() const { return mXml->atEnd() || (mXml->isEndElement() && mXml->name() == mName); }
-};
-
 bool GPX::Loader::load(const QString & url)
 {
-    qDebug() << "Loading" << url << "...";
+    qInfo() << "Loading" << url << "...";
 
     const QString fileName = QUrl(url).path();
 
@@ -87,42 +80,55 @@ bool GPX::Loader::load(const QString & url)
 
     QXmlStreamReader xml(data);
 
-    while (!xml.atEnd())
+    while (xml.readNextStartElement())
     {
-        xml.readNextStartElement();
-//        qDebug() << xml.lineNumber() << xml.tokenString();
-
-        XmlNode trkseg("trkseg", &xml);
-        if (trkseg.isStarted())
+        qDebug() << xml.lineNumber() << xml.tokenString();
+        if (xml.name() == "gpx")
         {
-            GPX::Segment segment;
-            do
+            while (xml.readNextStartElement())
             {
-                xml.readNext();
-//                qDebug() << xml.lineNumber() << xml.tokenString();
-                XmlNode trkpt("trkpt", &xml);
-                if (trkpt.isStarted())
+                qDebug() << xml.lineNumber() << xml.tokenString();
+                if (xml.name() == "trk")
                 {
-                    QGeoCoordinate coord;
-                    QDateTime timestamp;
-                    coord.setLatitude(xml.attributes().value("lat").toDouble());
-                    coord.setLongitude(xml.attributes().value("lon").toDouble());
-                    do
+                    while (xml.readNextStartElement())
                     {
-                        xml.readNext();
-//                        qDebug() << xml.lineNumber() << xml.tokenString();
-                        if (XmlNode("ele", &xml).isStarted())
-                            coord.setAltitude(xml.readElementText().toDouble());
-                        if (XmlNode("time", &xml).isStarted())
-                            timestamp = stringToDateTime(xml.readElementText());
-                    } while (!trkpt.isEnded());
-                    QGeoPositionInfo point(coord, timestamp);
-                    segment.append(point);
-                    stat.add(coord.latitude(), coord.longitude());
-                }
-            } while (!trkseg.isEnded());
-            mTrack.append(segment);
-        }
+                        qDebug() << xml.lineNumber() << xml.tokenString();
+                        if (xml.name() == "trkseg")
+                        {
+                            GPX::Segment segment;
+                            while (xml.readNextStartElement())
+                            {
+                                qDebug() << xml.lineNumber() << xml.tokenString();
+                                if (xml.name() == "trkpt")
+                                {
+                                    QGeoCoordinate coord;
+                                    QDateTime timestamp;
+                                    coord.setLatitude(xml.attributes().value("lat").toDouble());
+                                    coord.setLongitude(xml.attributes().value("lon").toDouble());
+
+                                    while (xml.readNextStartElement())
+                                    {
+                                        qDebug() << xml.lineNumber() << xml.tokenString();
+                                        if (xml.name() == "ele")
+                                            coord.setAltitude(xml.readElementText().toDouble());
+                                        else if (xml.name() == "time")
+                                            timestamp = stringToDateTime(xml.readElementText());
+                                        else
+                                            xml.skipCurrentElement();
+                                    }
+
+                                    QGeoPositionInfo point(coord, timestamp);
+                                    segment.append(point);
+                                    stat.add(coord.latitude(), coord.longitude());
+                                } else xml.skipCurrentElement();
+                            }
+
+                            mTrack.append(segment);
+                        } else xml.skipCurrentElement();
+                    }
+                } else xml.skipCurrentElement();
+            }
+        } else xml.skipCurrentElement();
     }
 
     mCenter = stat.center();
