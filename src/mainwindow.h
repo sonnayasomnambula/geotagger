@@ -31,6 +31,8 @@ private slots:
 
     void on_actionE_xit_triggered();
 
+    void on_actionSave_EXIF_triggered();
+
 private:
     void closeEvent(QCloseEvent* e) override;
 

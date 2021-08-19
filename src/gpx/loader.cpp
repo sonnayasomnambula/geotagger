@@ -38,10 +38,6 @@ class Statistic
 {
 public:
     void add(double lat, double lon) {
-        if (mTotal == 0) {
-
-        }
-
         mSum += QPointF(lat, lon);
         mTotal++;
     }
@@ -59,7 +55,6 @@ private:
 class XmlElement
 {
     QXmlStreamReader* mXml;
-    QStringList mChildren;
 
 public:
     explicit XmlElement(QXmlStreamReader* xml) : mXml(xml) {
@@ -70,6 +65,7 @@ public:
 
     bool operator ==(const QString& name) {
         if (mXml && mXml->name() == name) {
+            // matched, don't skip
             mXml = nullptr;
             return true;
         }

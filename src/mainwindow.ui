@@ -155,7 +155,7 @@
      <x>0</x>
      <y>0</y>
      <width>1227</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -164,6 +164,8 @@
     </property>
     <addaction name="actionLoadTrack"/>
     <addaction name="actionLoadPhotos"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_EXIF"/>
     <addaction name="separator"/>
     <addaction name="actionRestore_session_on_startup"/>
     <addaction name="separator"/>
@@ -214,6 +216,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+X</string>
+   </property>
+  </action>
+  <action name="actionSave_EXIF">
+   <property name="text">
+    <string>Save EXIF</string>
    </property>
   </action>
  </widget>

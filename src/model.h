@@ -54,6 +54,8 @@ public:
 
     void setTimeAdjust(qint64 timeAdjust) { mTimeAdjust = timeAdjust; }
 
+    bool savePhotos();
+
     const QList<QGeoPositionInfo>& track() const { return mTrack; }
 
     Q_INVOKABLE QGeoCoordinate coordinate(const QString& name) const;
@@ -78,6 +80,7 @@ public:
             BaseName,
             Latitude,
             Longitude,
+            Altitude,
             Pixmap
         };
     };
@@ -97,15 +100,19 @@ private:
         QString baseName;
         QDateTime time; // shot time from EXIF or last modified
         GeoPoint position;
+        double altitude;
         QString pixmap; // base64 thumbnail
         int flags = 0;
+
+        bool haveShotTime() const { return flags & Exif::HaveShotTime; }
+        bool haveGPSCoord() const { return flags & Exif::HaveGpsCoord; }
 
         struct Exif
         {
             enum
             {
                 HaveShotTime    = 0x01,
-                HaveGps         = 0x02,
+                HaveGpsCoord    = 0x02,
             };
         };
     };

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include <QDebug>
+#include <QDesktopServices>
 #include <QPixmap>
 #include <QStandardPaths>
 #include <QSettings>
@@ -109,6 +110,7 @@ MainWindow::MainWindow(QWidget* parent) :
         ui->progressBar->setVisible(i != total);
     });
     ui->progressBar->hide();
+
     connect(mModel, &Model::trackChanged, this, [this]{
         const auto& track = mModel->track();
         if (track.isEmpty()) {
@@ -122,6 +124,12 @@ MainWindow::MainWindow(QWidget* parent) :
         ui->startTime->setText(start.toString());
         ui->finishTime->setText(finish.toString());
     });
+
+    connect(mModel, &Model::photosChanged, this, [this]{
+        ui->actionSave_EXIF->setEnabled(mModel->rowCount() > 0);
+    });
+    ui->actionSave_EXIF->setEnabled(mModel->rowCount() > 0);
+
     connect(ui->timeAdjistWidget, &TimeAdjustWidget::changed, this, [this]{
         mModel->setTimeAdjust(ui->timeAdjistWidget->value());
         mModel->guessPhotoCoordinates();
@@ -313,3 +321,20 @@ void MainWindow::on_actionE_xit_triggered()
 {
     close();
 }
+
+void MainWindow::on_actionSave_EXIF_triggered()
+{
+    if (QMessageBox::question(this, "", tr("Overwrite EXIF?")) != QMessageBox::Yes)
+        return;
+
+    if (!mModel->savePhotos()) {
+        QMessageBox::warning(this, tr("Save failed"), mModel->lastError());
+        return;
+    }
+
+    QMessageBox::information(this, "", tr("Saved succesfully"));
+
+    QString firstFile = mModel->data(static_cast<const QAbstractItemModel*>(mModel)->index(0, 0), Model::Role::Path).toString();
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(firstFile).absolutePath()));
+}
+

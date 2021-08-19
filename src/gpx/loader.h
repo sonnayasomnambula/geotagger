@@ -5,6 +5,7 @@
 
 #include "track.h"
 
+class QExifURational;
 class QGeoPath;
 
 namespace GPX
@@ -28,6 +29,7 @@ public:
                                          const QString& latRef,
                                          const QVector<QPair<quint32, quint32>>& lon,
                                          const QString& lonRef);
+    static
 private:
     bool warn(const QString& text);
 
@@ -37,6 +39,17 @@ private:
     QString mName;
     QGeoCoordinate mCenter;
     QString mLastError;
+};
+
+class Saver
+{
+    Q_DECLARE_TR_FUNCTIONS(Saver)
+
+public:
+    static QVector<QExifURational> toExifLatitude(double lat);
+    static QVector<QExifURational> toExifLongitude(double lat);
+    QString toExifLatitudeRef(double lat);
+    QString toExifLongitudeRef(double lat);
 };
 
 } // namespace GPX
