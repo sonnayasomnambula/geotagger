@@ -28,9 +28,7 @@ private slots:
     void on_actionLoadTrack_triggered();
     void on_actionLoadPhotos_triggered();
     void on_actionAdjust_photo_timestamp_toggled(bool toggled);
-
     void on_actionE_xit_triggered();
-
     void on_actionSave_EXIF_triggered();
 
 private:

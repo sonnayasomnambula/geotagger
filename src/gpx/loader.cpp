@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include <QtMath>
+
 #include <QDebug>
 #include <QCoreApplication>
 #include <QGeoCoordinate>
@@ -11,10 +13,11 @@
 #include <QFileInfo>
 #include <QXmlStreamReader>
 #include <QTextCodec>
+#include <QTimeZone>
 #include <QPointF>
 
-#undef qDebug
-#define qDebug QT_NO_QDEBUG_MACRO
+//#undef qDebug
+//#define qDebug QT_NO_QDEBUG_MACRO
 
 inline double linear_interpolation(double v1, double v2, double passed) {
     Q_ASSERT(passed >= 0. && passed < 1.);
@@ -58,7 +61,7 @@ class XmlElement
 
 public:
     explicit XmlElement(QXmlStreamReader* xml) : mXml(xml) {
-        qDebug() << mXml->lineNumber() << mXml->tokenString();
+//        qDebug() << mXml->name() << mXml->lineNumber() << mXml->tokenString();
     }
 
     ~XmlElement() { if (mXml) mXml->skipCurrentElement(); }
@@ -159,29 +162,54 @@ bool GPX::Loader::load(const QString& url)
     return true;
 }
 
-QGeoCoordinate GPX::Loader::fromExifInfernalFormat(const QVector<QPair<quint32, quint32>> & lat, const QString & latRef, const QVector<QPair<quint32, quint32> > & lon, const QString & lonRef)
+QGeoCoordinate GPX::Loader::fromExifLatLon(const QVector<QPair<quint32, quint32>>& lat, const QString& latRef,
+                                           const QVector<QPair<quint32, quint32>>& lon, const QString& lonRef)
 {
-    struct HMS {
-        double h, m, s;
-        explicit HMS(const QVector<QPair<quint32, quint32>>& value) :
-            h(1.0 * value[0].first / value[0].second),
+    if (lat.size() != 3 || lon.size() != 3) {
+        qWarning() << "Unsupported latlon format" << lat << latRef << lon << lonRef;
+        return {};
+    }
+
+    class DMS {
+        double d, m, s;
+    public:
+        explicit DMS(const QVector<QPair<quint32, quint32>>& value) :
+            d(1.0 * value[0].first / value[0].second),
             m(1.0 * value[1].first / value[1].second),
             s(1.0 * value[2].first / value[2].second)
         {}
-        double join() { return h + m / 60 + s / 60 / 60; }
+        double join() { return d + m / 60 + s / 60 / 60; }
     };
 
-    if (lat.size() != 3 || lon.size() != 3) return {};
-
-    double llat = HMS(lat).join();
-    double llon = HMS(lon).join();
+    double llat = DMS(lat).join();
+    double llon = DMS(lon).join();
 
     if (latRef == "S")
         llat = -llat;
     if (lonRef == "W")
         llon = -llon;
 
+//    if (lat != Saver::toExifLatitude(llat))
+//        qWarning() << "ACHTUNG!!111" << lat << Saver::toExifLatitude(llat);
+
+//    if (lon != Saver::toExifLatitude(llon))
+//        qWarning() << "ACHTUNG!!111" << lon << Saver::toExifLatitude(llon);
+
     return QGeoCoordinate(llat, llon);
+}
+
+double GPX::Loader::fromExifAltitude(const QVector<QPair<quint32, quint32>>& rationale, const QString& ref)
+{
+    if (rationale.size() != 1) {
+        qWarning() << "Unsupported altitude format" << rationale << ref;
+        return 0.;
+    }
+
+    double alt = 1.0 * rationale.first().first / rationale.first().second;
+    if (!ref.isEmpty()) // TODO check this
+        alt = -alt;
+
+    return alt;
 }
 
 bool GPX::Loader::warn(const QString& text)
@@ -190,8 +218,6 @@ bool GPX::Loader::warn(const QString& text)
     qWarning().noquote() << "GPX::Loader:" << mLastError;
     return false;
 }
-
-#include <QTimeZone>
 
 QDateTime GPX::Loader::stringToDateTime(const QString& s)
 {

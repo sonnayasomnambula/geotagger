@@ -5,7 +5,7 @@ CONFIG += c++17
 SOURCES += \
     src/3rdparty/sigvdr.de/qexifimageheader.cpp \
     src/gpx/loader.cpp \
-    src/gpx/track.cpp \
+    src/gpx/saver.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/model.cpp \
@@ -17,6 +17,7 @@ HEADERS += \
     src/3rdparty/sigvdr.de/qexifimageheader.h \
     src/abstractsettings.h \
     src/gpx/loader.h \
+    src/gpx/saver.h \
     src/gpx/track.h \
     src/mainwindow.h \
     src/model.h \

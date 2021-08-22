@@ -295,7 +295,6 @@ void MainWindow::on_actionLoadPhotos_triggered()
     QStringList names = QFileDialog::getOpenFileNames(this, "", directory, "*.jpg");
     if (names.isEmpty()) return;
 
-
     directory = QFileInfo(names.first()).absoluteDir().absolutePath();
     settings.dirs.photo.save(directory);
 
@@ -324,7 +323,8 @@ void MainWindow::on_actionE_xit_triggered()
 
 void MainWindow::on_actionSave_EXIF_triggered()
 {
-    if (QMessageBox::question(this, "", tr("Overwrite EXIF?")) != QMessageBox::Yes)
+    // TODO save as
+    if (QMessageBox::question(this, "", tr("Overwrite existing files?")) != QMessageBox::Yes)
         return;
 
     if (!mModel->savePhotos()) {

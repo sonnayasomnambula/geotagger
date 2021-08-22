@@ -100,7 +100,7 @@ private:
         QString baseName;
         QDateTime time; // shot time from EXIF or last modified
         GeoPoint position;
-        double altitude;
+        double altitude = 0.;
         QString pixmap; // base64 thumbnail
         int flags = 0;
 
