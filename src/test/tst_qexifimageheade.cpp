@@ -10,6 +10,7 @@
 
 #include "gpx/loader.h"
 #include "gpx/saver.h"
+#include "tmpjpegfile.h"
 
 using GPX::Loader;
 using GPX::Saver;
@@ -23,6 +24,9 @@ static const auto GpsAltitudeRef    = QExifImageHeader::GpsAltitudeRef;
 
 TEST(QExifImageHeader, save_load)
 {
+    QString jpeg = TmpJpegFile::instance();
+    ASSERT_FALSE(jpeg.isEmpty()) << qPrintable(TmpJpegFile::lastError());
+
     double lat = 58.7203335774538746;
 
     auto generated = Saver::toExifLatitude(lat);
@@ -34,23 +38,17 @@ TEST(QExifImageHeader, save_load)
     ASSERT_EQ(132009u, generated[2].first);
     ASSERT_EQ(10000u, generated[2].second);
 
-    // make a copy
-    QFileInfo originalFile("/home/serge/Pictures/Череменецкое 1/ready/IMG_3808a.jpg");
-    QDir temp(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
-    QString copy = temp.absoluteFilePath(originalFile.fileName());
-    QFile(originalFile.absoluteFilePath()).copy(copy);
-
     {
         // save
         QExifImageHeader exif;
         exif.setValue(GpsLatitude, generated);
-        exif.saveToJpeg(copy);
+        ASSERT_TRUE(exif.saveToJpeg(jpeg));
     }
 
     {
         // load
         QExifImageHeader exif;
-        ASSERT_TRUE(exif.loadFromJpeg(copy));
+        ASSERT_TRUE(exif.loadFromJpeg(jpeg));
         ASSERT_TRUE(exif.contains(GpsLatitude));
 
         auto loaded = exif.value(GpsLatitude).toRationalVector();

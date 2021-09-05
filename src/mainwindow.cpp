@@ -267,6 +267,10 @@ void MainWindow::on_actionLoadTrack_triggered()
     directory = QFileInfo(name).absoluteDir().absolutePath();
     settings.dirs.gpx.save(directory);
 
+    // TODO
+    if (!settings.dirs.photo.exists())
+        settings.dirs.photo.save(directory);
+
     loadGPX(name);
 }
 
@@ -297,6 +301,9 @@ void MainWindow::on_actionLoadPhotos_triggered()
 
     directory = QFileInfo(names.first()).absoluteDir().absolutePath();
     settings.dirs.photo.save(directory);
+
+    if (!settings.dirs.gpx.exists())
+        settings.dirs.gpx.save(directory);
 
     loadPhotos(names);
 }

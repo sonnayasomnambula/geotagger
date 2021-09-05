@@ -15,10 +15,15 @@ SOURCES += \
     src/3rdparty/sigvdr.de/qexifimageheader.cpp \
     src/gpx/loader.cpp \
     src/gpx/saver.cpp \
+    src/test/tmpjpegfile.cpp \
     src/test/tst_qexifimageheade.cpp
 
 HEADERS += \
     src/3rdparty/sigvdr.de/qexifimageheader.h \
     src/gpx/loader.h \
     src/gpx/saver.h \
-    src/gpx/track.h
+    src/gpx/track.h \
+    src/test/tmpjpegfile.h
+
+RESOURCES += \
+    rsc/test.qrc
