@@ -108,7 +108,11 @@ bool Model::setPhotos(const QList<FilePath>& files)
 
         if (exif.contains(QExifImageHeader::DateTime))
         {
-            QString timeString = exif.value(QExifImageHeader::DateTime).toString();
+            QString timeString = exif.value(QExifImageHeader::DateTimeDigitized).toString();
+            if (timeString.isEmpty())
+                timeString = exif.value(QExifImageHeader::DateTimeOriginal).toString();
+            if (timeString.isEmpty())
+                timeString = exif.value(QExifImageHeader::DateTime).toString();
 //            qDebug().noquote() << item.baseName << timeString;
             QString pattern = "yyyy:MM:dd hh:mm:ss";
             if (timeString.size() == pattern.size())
