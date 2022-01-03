@@ -346,6 +346,7 @@ void Model::guessPhotoCoordinates()
             return info.timestamp() > time; });
         if (i == mTrack.begin() || i == mTrack.end()) {
             qWarning() << item.baseName << item.time.addSecs(mTimeAdjust) << "is beyond track time";
+            item.position = GeoPoint(); // clear position if guessed earlier
             continue;
         }
         const QGeoPositionInfo& after = *i;
