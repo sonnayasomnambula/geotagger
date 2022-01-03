@@ -7,6 +7,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 class QString;
 class QStringList;
+class QMimeData;
 QT_END_NAMESPACE
 
 class Controller;
@@ -33,6 +34,10 @@ private slots:
 
 private:
     void closeEvent(QCloseEvent* e) override;
+    void dragEnterEvent(QDragEnterEvent* e) override;
+    void dragMoveEvent(QDragMoveEvent* e) override;
+    void dragLeaveEvent(QDragLeaveEvent* e) override;
+    void dropEvent(QDropEvent* e) override;
 
     void loadSettings();
     void saveSettings();

@@ -10,28 +10,27 @@ public:
     template <typename T>
     class Tag
     {
+        const QString mKey;
+
     public:
         Tag(const char* key) : mKey(key) {}
-        Tag(const QString& key) : mKey(key) {}
 
-        T value(const T& defaultValue = T()) const {
+        T operator ()(const T& defaultValue) const {
             return QSettings().value(mKey, defaultValue).template value<T>();
         }
 
-        T operator ()(const T& defaultValue = T()) const {
-            return QSettings().value(mKey, defaultValue).template value<T>();
+        operator T() const {
+            return operator ()(T());
         }
 
-        void save(const T& value) {
+        Tag& operator =(const T& value) {
             QSettings().setValue(mKey, value);
+            return *this;
         }
 
-        bool exists() const {
-            return QSettings().contains(mKey);
+        bool isNull() const {
+            return !QSettings().contains(mKey);
         }
-
-    protected:
-        const QString mKey;
     };
 
     class VariantTag : public Tag<QVariant>
@@ -41,66 +40,51 @@ public:
 
         template<typename T>
         T operator ()(const T& defaultValue) const {
-            return QSettings().value(mKey, defaultValue).template value<T>();
+            return Tag::operator()(defaultValue).template value<T>();
         }
     };
 
     class State
     {
-        Tag<QByteArray> mTag;
+        Tag<QByteArray> mState;
 
     public:
-        State(const char* key) : mTag(key) {}
-        State(const QString& key) : mTag(key) {}
+        State(const char* key) : mState(key) {}
 
         template <class Widget>
-        void save(Widget* widget) {
-            mTag.save(widget->saveState());
-        }
+        void save(Widget* widget) { mState = widget->saveState(); }
 
         template <class Widget>
-        void restore(Widget* widget) {
-            widget->restoreState(mTag(widget->saveState()));
-        }
+        void restore(Widget* widget) { if (!mState.isNull()) widget->restoreState(mState); }
     };
 
     class Geometry
     {
-        Tag<QByteArray> mTag;
+        Tag<QByteArray> mGeometry;
 
     public:
-        Geometry(const char* key) : mTag(key) {}
-        Geometry(const QString& key) : mTag(key) {}
+        Geometry(const char* key) : mGeometry(key) {}
 
         template <class Widget>
-        void save(Widget* widget) {
-            mTag.save(widget->saveGeometry());
-        }
+        void save(Widget* widget) { mGeometry = widget->saveGeometry(); }
 
         template <class Widget>
-        void restore(Widget* widget) {
-            widget->restoreGeometry(mTag(widget->saveGeometry()));
-        }
+        void restore(Widget* widget) { if (!mGeometry.isNull()) widget->restoreGeometry(mGeometry); }
     };
 
     class Property
     {
-        Tag<QVariant> mTag;
+        Tag<QVariant> mProperty;
         QByteArray mPropertyName;
 
     public:
-        Property(const char* key, const char* propertyName) : mTag(key), mPropertyName(propertyName) {}
-        Property(const QString& key, const char* propertyName) : mTag(key), mPropertyName(propertyName) {}
+        Property(const char* key, const char* propertyName) : mProperty(key), mPropertyName(propertyName) {}
 
         template <class Object>
-        void save(Object* object) {
-            mTag.save(object->property(mPropertyName));
-        }
+        void save(Object* object) { mProperty = object->property(mPropertyName); }
 
         template <class Object>
-        void restore(Object* object) {
-            object->setProperty(mPropertyName, mTag(object->property(mPropertyName)));
-        }
+        void restore(Object* object) { if (!mProperty.isNull()) object->setProperty(mPropertyName, mProperty); }
     };
 };
 

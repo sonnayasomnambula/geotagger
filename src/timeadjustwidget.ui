@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>256</width>
+    <width>277</width>
     <height>44</height>
    </rect>
   </property>
@@ -14,6 +14,19 @@
    <string>Adjust time</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QSpinBox" name="d">
+     <property name="toolTip">
+      <string>Days</string>
+     </property>
+     <property name="minimum">
+      <number>-99</number>
+     </property>
+     <property name="maximum">
+      <number>99</number>
+     </property>
+    </widget>
+   </item>
    <item>
     <widget class="QSpinBox" name="h">
      <property name="toolTip">

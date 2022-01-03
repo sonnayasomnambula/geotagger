@@ -20,10 +20,12 @@ public:
 
     qint64 value() const;
 
+    int days() const;
     int hours() const;
     int minutes() const;
     int seconds() const;
 
+    void setDays(int value);
     void setHours(int value);
     void setMinutes(int value);
     void setSeconds(int value);

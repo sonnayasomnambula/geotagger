@@ -49,8 +49,10 @@ Model::Model(QObject *parent)
     connect(this, &Model::trackChanged, this, &Model::guessPhotoCoordinates);
 }
 
-bool Model::setPhotos(const QList<FilePath> &files)
+bool Model::setPhotos(const QList<FilePath>& files)
 {
+    if (files.isEmpty()) return false;
+
     beginResetModel();
 
     mPhotos.clear();
@@ -107,7 +109,7 @@ bool Model::setPhotos(const QList<FilePath> &files)
         if (exif.contains(QExifImageHeader::DateTime))
         {
             QString timeString = exif.value(QExifImageHeader::DateTime).toString();
-            qDebug().noquote() << item.baseName << timeString;
+//            qDebug().noquote() << item.baseName << timeString;
             QString pattern = "yyyy:MM:dd hh:mm:ss";
             if (timeString.size() == pattern.size())
             {
@@ -338,8 +340,10 @@ void Model::guessPhotoCoordinates()
 
         auto i = std::find_if(mTrack.begin(), mTrack.end(), [time = item.time.addSecs(mTimeAdjust)](const QGeoPositionInfo& info) {
             return info.timestamp() > time; });
-        if (i == mTrack.begin() || i == mTrack.end())
+        if (i == mTrack.begin() || i == mTrack.end()) {
+            qWarning() << item.baseName << item.time.addSecs(mTimeAdjust) << "is beyond track time";
             continue;
+        }
         const QGeoPositionInfo& after = *i;
         const QGeoPositionInfo& before = *(--i);
 //        qDebug().noquote() << item.baseName << "found" <<

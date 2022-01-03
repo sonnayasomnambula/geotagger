@@ -9,6 +9,7 @@
 #include <QStringList>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QStyledItemDelegate>
 #include <QQmlContext>
 #include <QDateTime>
@@ -32,18 +33,23 @@ struct Settings : AbstractSettings
     struct {
         State state = "window/state";
         Geometry geometry = "window/geometry";
-        State splitterState = "window/splitterState";
-        State photosHeaderState = "window/photosHeaderState";
+        struct { State state = "window/splitter.state"; } splitter;
+        struct { State state = "window/header.state"; } header;
         Tag<bool> adjustTimestamp = "window/adjustTimestamp";
     } window;
 
     struct {
+        Tag<int> d = "adjustTimestamp/d";
         Tag<int> h = "adjustTimestamp/h";
         Tag<int> m = "adjustTimestamp/m";
         Tag<int> s = "adjustTimestamp/s";
     } adjustTimestamp;
 
-    Tag<bool> restoreSession = "restoreSession";
+    struct {
+        Tag<QString> gpx = "session/gpx";
+        Tag<QStringList> photos = "session/photos";
+        Tag<bool> restore = "session/restore";
+    } session;
 };
 
 class TimeDelegate : public QStyledItemDelegate
@@ -64,6 +70,43 @@ public:
         GeoPoint p = value.toPointF();
         return QGeoCoordinate(p.lat(), p.lon()).toString(QGeoCoordinate::DegreesWithHemisphere);
     }
+};
+
+struct Dropped
+{
+    QString gpx;
+    QStringList photos;
+
+    explicit Dropped(const QMimeData* mime) {
+        for (const QUrl& url: mime->urls()) {
+            append(url.toLocalFile());
+        }
+        std::sort(photos.begin(), photos.end());
+    }
+
+    bool isEmpty() const {
+        return gpx.isEmpty() && photos.isEmpty();
+    }
+
+    void append(const QFileInfo& file) {
+
+        if (file.isDir()) {
+            QDirIterator i(file.absoluteFilePath(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
+            while (i.hasNext())
+                append(i.next());
+            return;
+        }
+
+        if (file.isFile()) {
+            if (file.suffix().compare("gpx", Qt::CaseInsensitive) == 0)
+                gpx = file.absoluteFilePath();
+
+            if (file.suffix().compare("jpg", Qt::CaseInsensitive) == 0 ||
+                file.suffix().compare("jpeg", Qt::CaseInsensitive) == 0)
+                photos.append(file.absoluteFilePath());
+        }
+    }
+
 };
 
 MainWindow::MainWindow(QWidget* parent) :
@@ -147,6 +190,37 @@ void MainWindow::closeEvent(QCloseEvent*)
     saveSettings();
 }
 
+void MainWindow::dragEnterEvent(QDragEnterEvent* e)
+{
+    Dropped dropped(e->mimeData());
+    if (dropped.isEmpty())
+        return;
+
+    e->acceptProposedAction();
+}
+
+void MainWindow::dragMoveEvent(QDragMoveEvent* e)
+{
+    e->acceptProposedAction();
+}
+
+void MainWindow::dragLeaveEvent(QDragLeaveEvent* e)
+{
+    e->accept();
+}
+
+void MainWindow::dropEvent(QDropEvent* e)
+{
+    Dropped dropped(e->mimeData());
+    if (dropped.isEmpty()) return;
+
+    e->acceptProposedAction();
+    if (!dropped.gpx.isEmpty())
+        loadGPX(dropped.gpx);
+    if (!dropped.photos.isEmpty())
+        loadPhotos(dropped.photos);
+}
+
 MainWindow::~MainWindow()
 {
     delete ui;
@@ -162,37 +236,14 @@ void MainWindow::restoreSession()
 {
     Settings settings;
 
-    if (!settings.restoreSession()) return;
+    bool restore = settings.session.restore;
+    QString gpx = settings.session.gpx;
+    QStringList photos = settings.session.photos;
 
-    if (settings.dirs.gpx.exists())
-    {
-        QDirIterator i(settings.dirs.gpx());
-        while (i.hasNext())
-        {
-            QFileInfo file(i.next());
-            if (file.suffix().contains("gpx", Qt::CaseInsensitive))
-            {
-                loadGPX(file.absoluteFilePath());
-                break;
-            }
-        }
-    }
+    if (!restore || gpx.isEmpty() || photos.isEmpty()) return;
 
-    if (settings.dirs.photo.exists())
-    {
-        QStringList photos;
-        QDirIterator i(settings.dirs.photo());
-        while (i.hasNext())
-        {
-            QFileInfo file(i.next());
-            if (file.suffix().contains("jpg", Qt::CaseInsensitive))
-            {
-                photos.append(file.absoluteFilePath());
-            }
-        }
-        std::sort(photos.begin(), photos.end());
-        loadPhotos(photos);
-    }
+    loadGPX(gpx);
+    loadPhotos(photos);
 }
 
 void MainWindow::loadSettings()
@@ -201,15 +252,16 @@ void MainWindow::loadSettings()
 
     settings.window.state.restore(this);
     settings.window.geometry.restore(this);
-    settings.window.splitterState.restore(ui->splitter);
-    settings.window.photosHeaderState.restore(ui->photos->header());
-    ui->actionAdjust_photo_timestamp->setChecked(settings.window.adjustTimestamp());
+    settings.window.splitter.state.restore(ui->splitter);
+    settings.window.header.state.restore(ui->photos->header());
+    ui->actionAdjust_photo_timestamp->setChecked(settings.window.adjustTimestamp);
 
-    ui->timeAdjistWidget->setHours(settings.adjustTimestamp.h());
-    ui->timeAdjistWidget->setMinutes(settings.adjustTimestamp.m());
-    ui->timeAdjistWidget->setSeconds(settings.adjustTimestamp.s());
+    ui->timeAdjistWidget->setDays(settings.adjustTimestamp.d);
+    ui->timeAdjistWidget->setHours(settings.adjustTimestamp.h);
+    ui->timeAdjistWidget->setMinutes(settings.adjustTimestamp.m);
+    ui->timeAdjistWidget->setSeconds(settings.adjustTimestamp.s);
 
-    ui->actionRestore_session_on_startup->setChecked(settings.restoreSession());
+    ui->actionRestore_session_on_startup->setChecked(settings.session.restore);
 }
 
 void MainWindow::saveSettings()
@@ -218,15 +270,16 @@ void MainWindow::saveSettings()
 
     settings.window.state.save(this);
     settings.window.geometry.save(this);
-    settings.window.splitterState.save(ui->splitter);
-    settings.window.photosHeaderState.save(ui->photos->header());
-    settings.window.adjustTimestamp.save(ui->actionAdjust_photo_timestamp->isChecked());
+    settings.window.splitter.state.save(ui->splitter);
+    settings.window.header.state.save(ui->photos->header());
+    settings.window.adjustTimestamp = ui->actionAdjust_photo_timestamp->isChecked();
 
-    settings.adjustTimestamp.h.save(ui->timeAdjistWidget->hours());
-    settings.adjustTimestamp.m.save(ui->timeAdjistWidget->minutes());
-    settings.adjustTimestamp.s.save(ui->timeAdjistWidget->seconds());
+    settings.adjustTimestamp.d = ui->timeAdjistWidget->days();
+    settings.adjustTimestamp.h = ui->timeAdjistWidget->hours();
+    settings.adjustTimestamp.m = ui->timeAdjistWidget->minutes();
+    settings.adjustTimestamp.s = ui->timeAdjistWidget->seconds();
 
-    settings.restoreSession.save(ui->actionRestore_session_on_startup->isChecked());
+    settings.session.restore = ui->actionRestore_session_on_startup->isChecked();
 }
 
 void MainWindow::onCurrentChanged(const QModelIndex& index)
@@ -265,11 +318,9 @@ void MainWindow::on_actionLoadTrack_triggered()
     if (name.isEmpty()) return;
 
     directory = QFileInfo(name).absoluteDir().absolutePath();
-    settings.dirs.gpx.save(directory);
-
-    // TODO
-    if (!settings.dirs.photo.exists())
-        settings.dirs.photo.save(directory);
+    settings.dirs.gpx = directory;
+    if (settings.dirs.photo.isNull())
+        settings.dirs.photo = directory;
 
     loadGPX(name);
 }
@@ -287,6 +338,10 @@ bool MainWindow::loadGPX(const QString& fileName)
     mModel->setTrack(loader.track());
     mModel->setCenter(loader.center());
     mModel->setZoom(9); // TODO
+
+    Settings settings;
+    settings.session.gpx = fileName;
+
     return true;
 }
 
@@ -300,11 +355,11 @@ void MainWindow::on_actionLoadPhotos_triggered()
     if (names.isEmpty()) return;
 
     directory = QFileInfo(names.first()).absoluteDir().absolutePath();
-    settings.dirs.photo.save(directory);
+    settings.dirs.photo = directory;
+    if (settings.dirs.gpx.isNull())
+        settings.dirs.gpx = directory;
 
-    if (!settings.dirs.gpx.exists())
-        settings.dirs.gpx.save(directory);
-
+    std::sort(names.begin(), names.end());
     loadPhotos(names);
 }
 
@@ -312,6 +367,8 @@ bool MainWindow::loadPhotos(const QStringList& fileNames)
 {
     if (!mModel->setPhotos(fileNames))
         return warn(tr("Unable to load photos"), mModel->lastError());
+
+    Settings().session.photos = fileNames;
 
     return true;
 }
@@ -344,4 +401,3 @@ void MainWindow::on_actionSave_EXIF_triggered()
     QString firstFile = mModel->data(static_cast<const QAbstractItemModel*>(mModel)->index(0, 0), Model::Role::Path).toString();
     QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(firstFile).absolutePath()));
 }
-

@@ -7,7 +7,7 @@ TimeAdjustWidget::TimeAdjustWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    for (QSpinBox* box : { ui->h, ui->m, ui->s })
+    for (QSpinBox* box : { ui->d, ui->h, ui->m, ui->s })
         connect(box, qOverload<int>(&QSpinBox::valueChanged), this, &TimeAdjustWidget::changed);
 }
 
@@ -18,7 +18,12 @@ TimeAdjustWidget::~TimeAdjustWidget()
 
 qint64 TimeAdjustWidget::value() const
 {
-    return ui->h->value() * 3600 + ui->m->value() * 60 + ui->s->value();
+    return days() * 3600 * 24 + hours() * 3600 + minutes() * 60 + seconds();
+}
+
+int TimeAdjustWidget::days() const
+{
+    return ui->d->value();
 }
 
 int TimeAdjustWidget::hours() const
@@ -34,6 +39,11 @@ int TimeAdjustWidget::minutes() const
 int TimeAdjustWidget::seconds() const
 {
     return ui->s->value();
+}
+
+void TimeAdjustWidget::setDays(int value)
+{
+    ui->d->setValue(value);
 }
 
 void TimeAdjustWidget::setHours(int value)

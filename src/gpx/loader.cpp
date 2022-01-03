@@ -49,6 +49,8 @@ public:
         return QGeoCoordinate(mSum.x() / mTotal, mSum.y() / mTotal);
     }
 
+    int total() const { return mTotal; }
+
 private:
     QPointF mSum;
     QGeoCoordinate mLatMax, mLatMin, mLonMax, mLonMin;
@@ -155,6 +157,12 @@ bool GPX::Loader::load(const QString& url)
                 }
             }
         }
+    }
+
+    qDebug() << stat.total() << "point(s) loaded";
+    if (!mTrack.isEmpty() && !mTrack.first().isEmpty() && !mTrack.last().isEmpty()) {
+        qDebug() << "start:" << mTrack.first().first().timestamp();
+        qDebug() << "end:  " << mTrack.last().last().timestamp();
     }
 
     mCenter = stat.center();
