@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/img">
-        <file>IMG_3904.jpg</file>
+        <file>with_gps.jpg</file>
+        <file>without_gps.jpg</file>
+        <file>without_exif.jpg</file>
     </qresource>
 </RCC>

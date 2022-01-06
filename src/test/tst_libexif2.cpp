@@ -6,25 +6,34 @@
 
 #include <gtest/gtest.h>
 
-#include <qexifimageheader.h>
+
 
 #include "gpx/loader.h"
 #include "gpx/saver.h"
+#include "gpx/libexif.h"
 #include "tmpjpegfile.h"
 
 using GPX::Loader;
 using GPX::Saver;
 
-static const auto GpsLatitude       = QExifImageHeader::GpsLatitude;
-static const auto GpsLongitude      = QExifImageHeader::GpsLongitude;
-static const auto GpsAltitude       = QExifImageHeader::GpsAltitude;
-static const auto GpsLatitudeRef    = QExifImageHeader::GpsLatitudeRef;
-static const auto GpsLongitudeRef   = QExifImageHeader::GpsLongitudeRef;
-static const auto GpsAltitudeRef    = QExifImageHeader::GpsAltitudeRef;
+namespace EXIF {
+namespace TAG {
+namespace GPS {
+static const ExifTag LATITUDE      = static_cast<ExifTag>(EXIF_TAG_GPS_LATITUDE);
+static const ExifTag LONGITUDE     = static_cast<ExifTag>(EXIF_TAG_GPS_LONGITUDE);
+static const ExifTag ALTITUDE      = static_cast<ExifTag>(EXIF_TAG_GPS_ALTITUDE);
+static const ExifTag LATITUDE_REF  = static_cast<ExifTag>(EXIF_TAG_GPS_LATITUDE_REF);
+static const ExifTag LONGITUDE_REF = static_cast<ExifTag>(EXIF_TAG_GPS_LONGITUDE_REF);
+static const ExifTag ALTITUDE_REF  = static_cast<ExifTag>(EXIF_TAG_GPS_ALTITUDE_REF);
+}
+}
+}
 
-TEST(QExifImageHeader, save_load)
+
+TEST(libexif, save_load)
 {
     QString jpeg = TmpJpegFile::withoutGps();
+//    QString jpeg = TmpJpegFile::withoutExif();
     ASSERT_FALSE(jpeg.isEmpty());
 
     double lat = 58.7203335774538746;
@@ -40,18 +49,19 @@ TEST(QExifImageHeader, save_load)
 
     {
         // save
-        QExifImageHeader exif;
-        exif.setValue(GpsLatitude, generated);
-        ASSERT_TRUE(exif.saveToJpeg(jpeg));
+        LibExif exif;
+        ASSERT_TRUE(exif.load(jpeg));
+        exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE, generated);
+        exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE_REF, "N");
+        ASSERT_TRUE(exif.save(jpeg));
     }
 
     {
         // load
-        QExifImageHeader exif;
-        ASSERT_TRUE(exif.loadFromJpeg(jpeg));
-        ASSERT_TRUE(exif.contains(GpsLatitude));
+        LibExif exif;
+        ASSERT_TRUE(exif.load(jpeg));
 
-        auto loaded = exif.value(GpsLatitude).toRationalVector();
+        auto loaded = exif.uRationalVector(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE);
         ASSERT_EQ(3, loaded.size());
 
         EXPECT_EQ(generated[0].first, loaded[0].first);

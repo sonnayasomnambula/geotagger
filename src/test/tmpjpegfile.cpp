@@ -1,5 +1,6 @@
 #include "tmpjpegfile.h"
 
+#include <QDebug>
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
@@ -9,31 +10,42 @@ QString TmpJpegFile::mLastError;
 QString TmpJpegFile::emptyFile(const QString &message, const QString &fileName)
 {
     mLastError = message + "'" + fileName + "'";
+    qWarning() << qPrintable(mLastError);
     return "";
 }
 
-QString TmpJpegFile::lastError()
+QString TmpJpegFile::instance(const QString& name)
 {
-    return mLastError;
-}
-
-QString TmpJpegFile::instance()
-{
-    QFileInfo originalFile(":/img/IMG_3904.jpg");
+    QFileInfo originalFile(name);
     QDir temp(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
-    QString name = temp.absoluteFilePath(originalFile.fileName());
+    QString path = temp.absoluteFilePath(originalFile.fileName());
 
-    QFile copy(name);
+    QFile copy(path);
     if (copy.exists() && !copy.remove())
-        return emptyFile("Unable to remove", name);
+        return emptyFile("Unable to remove", path);
 
     QFile original(originalFile.absoluteFilePath());
-    if (!original.copy(name))
-        return emptyFile("Unable to copy", name);
+    if (!original.copy(path))
+        return emptyFile("Unable to copy", path);
 
 #ifdef Q_OS_LINUX
     if (!copy.setPermissions(QFile::ReadUser | QFile::WriteUser))
-        return emptyFile("Unable to set permissions", name);
+        return emptyFile("Unable to set permissions", path);
 #endif
-    return name;
+    return path;
+}
+
+QString TmpJpegFile::withGps()
+{
+    return instance(":/img/with_gps.jpg");
+}
+
+QString TmpJpegFile::withoutGps()
+{
+    return instance(":/img/without_gps.jpg");
+}
+
+QString TmpJpegFile::withoutExif()
+{
+    return instance(":/img/without_exif.jpg");
 }
