@@ -106,7 +106,6 @@ struct Dropped
                 photos.append(file.absoluteFilePath());
         }
     }
-
 };
 
 MainWindow::MainWindow(QWidget* parent) :
@@ -293,6 +292,7 @@ void MainWindow::onCurrentChanged(const QModelIndex& index)
     QString fileName = mModel->data(index, Model::Role::Path).toString();
     QPixmap pix(fileName);
     ui->picture->setPixmap(pix);
+    ui->picture->setPath(fileName);
     ui->pictureDetails->setText(QString("%1 (%2x%3, %4)")
                                 .arg(fileName)
                                 .arg(pix.width())
