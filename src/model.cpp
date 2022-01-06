@@ -7,8 +7,7 @@
 #include <QPixmap>
 #include <QPointF>
 
-#include <sigvdr.de/qexifimageheader.h>
-
+#include "gpx/libexif.h"
 #include "gpx/loader.h"
 #include "gpx/saver.h"
 #include "gpx/track.h"
@@ -72,52 +71,44 @@ bool Model::setPhotos(const QList<FilePath>& files)
         item.baseName = file.baseName();
         item.time = file.lastModified();
 
-        QExifImageHeader exif;
-        if (!exif.loadFromJpeg(name))
+        LibExif exif;
+        if (!exif.load(name))
         {
             mErrors.append(tr("Unable to read EXIF from '%1'").arg(name));
             continue;
         }
 
-        int t = exif.value(QExifImageHeader::GpsLatitude).type();
-
-        if (exif.contains(QExifImageHeader::GpsLatitude) &&
-            exif.contains(QExifImageHeader::GpsLatitudeRef) &&
-            exif.contains(QExifImageHeader::GpsLongitude) &&
-            exif.contains(QExifImageHeader::GpsLongitudeRef))
         {
-            QVector<QPair<quint32, quint32>> lat = exif.value(QExifImageHeader::GpsLatitude).toRationalVector();
-            QVector<QPair<quint32, quint32>> lon = exif.value(QExifImageHeader::GpsLongitude).toRationalVector();
-            QString latRef = exif.value(QExifImageHeader::GpsLatitudeRef).toString();
-            QString lonRef = exif.value(QExifImageHeader::GpsLongitudeRef).toString();
+            auto lat = exif.uRationalVector(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE);
+            auto lon = exif.uRationalVector(EXIF_IFD_GPS, EXIF::TAG::GPS::LONGITUDE);
+            auto alt = exif.uRationalVector(EXIF_IFD_GPS, EXIF::TAG::GPS::ALTITUDE);
+            auto latRef = exif.ascii(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE_REF);
+            auto lonRef = exif.ascii(EXIF_IFD_GPS, EXIF::TAG::GPS::LONGITUDE_REF);
+            auto altRef = exif.ascii(EXIF_IFD_GPS, EXIF::TAG::GPS::ALTITUDE_REF);
 
-            item.position = GPX::Loader::fromExifLatLon(lat, latRef, lon, lonRef);
-
-            if (exif.contains(QExifImageHeader::GpsAltitude) &&
-                exif.contains(QExifImageHeader::GpsAltitudeRef))
+            if (!lat.isEmpty() && !lon.isEmpty() && !latRef.isEmpty() && !lonRef.isEmpty())
             {
-                QVector<QPair<quint32, quint32>> alt = exif.value(QExifImageHeader::GpsAltitude).toRationalVector();
-                QString altRef = exif.value(QExifImageHeader::GpsAltitudeRef).toString();
+                item.position = GPX::Loader::fromExifLatLon(lat, latRef, lon, lonRef);
+                if (!alt.isEmpty() && !altRef.isEmpty())
+                {
+                    item.altitude = GPX::Loader::fromExifAltitude(alt, altRef);
+                }
 
-                item.altitude = GPX::Loader::fromExifAltitude(alt, altRef);
+                item.flags |= Photo::Exif::HaveGpsCoord;
             }
-
-            item.flags |= Photo::Exif::HaveGpsCoord;
         }
 
-
-        if (exif.contains(QExifImageHeader::DateTime))
         {
-            QString timeString = exif.value(QExifImageHeader::DateTimeDigitized).toString();
+            QByteArray timeString = exif.ascii(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED);
             if (timeString.isEmpty())
-                timeString = exif.value(QExifImageHeader::DateTimeOriginal).toString();
+                timeString = exif.ascii(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL);
             if (timeString.isEmpty())
-                timeString = exif.value(QExifImageHeader::DateTime).toString();
-//            qDebug().noquote() << item.baseName << timeString;
+                timeString = exif.ascii(EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+            qDebug().noquote() << item.baseName << timeString;
             QString pattern = "yyyy:MM:dd hh:mm:ss";
             if (timeString.size() == pattern.size())
             {
-                QDateTime time = QDateTime::fromString(timeString, pattern);
+                QDateTime time = QDateTime::fromString(QString::fromLatin1(timeString), pattern);
                 if (time.isValid())
                 {
                     item.time = time;
@@ -128,7 +119,7 @@ bool Model::setPhotos(const QList<FilePath>& files)
 
         {
             // TODO move to thread
-            // TODO use QExifImageHeader::thumbnail()
+            // TODO use exif thumbnail
             QPixmap pix;
             if (!pix.load(name))
                 item.pixmap = ":/img/not_available.png";
@@ -187,29 +178,29 @@ bool Model::savePhotos()
         const Photo&    item = i.value();
         if (item.haveGPSCoord() && item.haveShotTime()) continue;
 
-        QExifImageHeader exif;
-        if (!exif.loadFromJpeg(name)) {
+        LibExif exif;
+        if (!exif.load(name)) {
             mErrors.append(tr("Unable to read EXIF from '%1'").arg(name));
             continue;
         }
 
         if (!item.haveGPSCoord()) {
-            exif.setValue(QExifImageHeader::GpsLatitude, GPX::Saver::toExifLatitude(item.position.lat()));
-            exif.setValue(QExifImageHeader::GpsLatitudeRef, GPX::Saver::toExifLatitudeRef(item.position.lat()));
-            exif.setValue(QExifImageHeader::GpsLongitude, GPX::Saver::toExifLongitude(item.position.lon()));
-            exif.setValue(QExifImageHeader::GpsLongitudeRef, GPX::Saver::toExifLongitudeRef(item.position.lon()));
-            exif.setValue(QExifImageHeader::GpsAltitude, GPX::Saver::toExifAltitude(item.altitude));
-            exif.setValue(QExifImageHeader::GpsAltitudeRef, GPX::Saver::toExifAltitudeRef(item.altitude));
+            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE, GPX::Saver::toExifLatitude(item.position.lat()));
+            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE_REF, GPX::Saver::toExifLatitudeRef(item.position.lat()));
+            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LONGITUDE, GPX::Saver::toExifLongitude(item.position.lon()));
+            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LONGITUDE_REF, GPX::Saver::toExifLongitudeRef(item.position.lon()));
+            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::ALTITUDE, GPX::Saver::toExifAltitude(item.altitude));
+            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::ALTITUDE_REF, GPX::Saver::toExifAltitudeRef(item.altitude));
         }
 
         const bool timeModified = !item.haveGPSCoord() && mTimeAdjust != 0;
         if ((!item.haveShotTime() || timeModified) && item.time.isValid()) {
             const QString pattern = "yyyy:MM:dd hh:mm:ss";
             const QString timeString = item.time.toString(pattern);
-            exif.setValue(QExifImageHeader::DateTime, timeString);
+            exif.setValue(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL, timeString);
         }
 
-        if (!exif.saveToJpeg(name)) {
+        if (!exif.save(name)) {
             mErrors.append(tr("Unable to save EXIF to '%1'").arg(name));
         }
     }

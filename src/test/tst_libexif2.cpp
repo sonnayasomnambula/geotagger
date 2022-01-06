@@ -6,8 +6,6 @@
 
 #include <gtest/gtest.h>
 
-
-
 #include "gpx/loader.h"
 #include "gpx/saver.h"
 #include "gpx/libexif.h"
@@ -16,24 +14,9 @@
 using GPX::Loader;
 using GPX::Saver;
 
-namespace EXIF {
-namespace TAG {
-namespace GPS {
-static const ExifTag LATITUDE      = static_cast<ExifTag>(EXIF_TAG_GPS_LATITUDE);
-static const ExifTag LONGITUDE     = static_cast<ExifTag>(EXIF_TAG_GPS_LONGITUDE);
-static const ExifTag ALTITUDE      = static_cast<ExifTag>(EXIF_TAG_GPS_ALTITUDE);
-static const ExifTag LATITUDE_REF  = static_cast<ExifTag>(EXIF_TAG_GPS_LATITUDE_REF);
-static const ExifTag LONGITUDE_REF = static_cast<ExifTag>(EXIF_TAG_GPS_LONGITUDE_REF);
-static const ExifTag ALTITUDE_REF  = static_cast<ExifTag>(EXIF_TAG_GPS_ALTITUDE_REF);
-}
-}
-}
-
-
 TEST(libexif, save_load)
 {
-    QString jpeg = TmpJpegFile::withoutGps();
-//    QString jpeg = TmpJpegFile::withoutExif();
+    QString jpeg = TmpJpegFile::withoutExif();
     ASSERT_FALSE(jpeg.isEmpty());
 
     double lat = 58.7203335774538746;
@@ -64,11 +47,37 @@ TEST(libexif, save_load)
         auto loaded = exif.uRationalVector(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE);
         ASSERT_EQ(3, loaded.size());
 
+        auto s = exif.ascii(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE_REF);
+
         EXPECT_EQ(generated[0].first, loaded[0].first);
         EXPECT_EQ(generated[0].second, loaded[0].second);
         EXPECT_EQ(generated[1].first, loaded[1].first);
         EXPECT_EQ(generated[1].second, loaded[1].second);
         EXPECT_EQ(generated[2].first, loaded[2].first);
         EXPECT_EQ(generated[2].second, loaded[2].second);
+    }
+}
+
+TEST(libexif, replace)
+{
+    QString jpeg = TmpJpegFile::withGps();
+    ASSERT_FALSE(jpeg.isEmpty());
+
+    const ExifIfd ifd = EXIF_IFD_0;
+    const ExifTag tag = EXIF_TAG_DATE_TIME;
+
+    {
+        LibExif exif;
+        ASSERT_TRUE(exif.load(jpeg));
+        const QByteArray previous = exif.ascii(ifd, tag);
+        ASSERT_FALSE(previous.isEmpty());
+
+        const QByteArray replaced = "1983:04:09 23:10:00";
+        ASSERT_NE(previous, replaced);
+        exif.setValue(ifd, tag, replaced);
+
+        const QByteArray current = exif.ascii(ifd, tag);
+
+        EXPECT_EQ(replaced, current);
     }
 }

@@ -23,7 +23,8 @@ bool LibExif::load(const QString& fileName)
     mExifData = exif_data_new_from_file(mFileName.toStdString().c_str());
     if (!mExifData)
     {
-        mExifData = exif_data_new(); // maybe return false?
+        // maybe return false?
+        mExifData = exif_data_new();
         exif_data_fix(mExifData);
     }
 
@@ -43,25 +44,36 @@ bool LibExif::save(const QString& fileName)
 
 void LibExif::setValue(ExifIfd ifd, ExifTag tag, const QVector<QPair<quint32, quint32> >& urational)
 {
-    ExifEntry *entry = exif_content_get_entry(mExifData->ifd[ifd], tag);
+    ExifEntry* entry = exif_content_get_entry(mExifData->ifd[ifd], tag);
+    void* memory;
+
+    const size_t components = urational.size();
+    const size_t size = components * exif_format_get_size(EXIF_FORMAT_RATIONAL);
 
     if (entry)
     {
-        printf("Entry: %s\n", entry->data);
-        // TODO
+        Q_ASSERT(entry->format == EXIF_FORMAT_RATIONAL); // TODO can format for the tag be changed?
+        if (entry->components == components)
+        {
+            memory = entry->data;
+        }
+        else
+        {
+            memory = exif_mem_realloc(mAllocator, entry->data, size);
+        }
+    }
+    else
+    {
+        entry = exif_entry_new_mem(mAllocator);
+        exif_content_add_entry(mExifData->ifd[ifd], entry);
+        exif_entry_initialize(entry, tag);
+        memory = exif_mem_alloc(mAllocator, size);
     }
 
-    entry = exif_entry_new_mem(mAllocator);
-
-    exif_content_add_entry (mExifData->ifd[ifd], entry);
-    exif_entry_initialize (entry, tag);
-
     entry->format = EXIF_FORMAT_RATIONAL;
-    entry->components = urational.size();
-    entry->size = entry->components * exif_format_get_size(EXIF_FORMAT_RATIONAL);
-
-    /* Allocate memory to use for holding the tag data */
-    entry->data = static_cast<unsigned char*>(exif_mem_alloc(mAllocator  , entry->size));
+    entry->components = components;
+    entry->size = size;
+    entry->data = static_cast<unsigned char*>(memory);
 
     for (int i = 0; i < urational.size(); ++i)
     {
@@ -85,9 +97,19 @@ QVector<QPair<quint32, quint32>> LibExif::uRationalVector(ExifIfd ifd, ExifTag t
     return value;
 }
 
+void LibExif::setValue(ExifIfd ifd, ExifTag tag, const char* ascii)
+{
+    setValue(ifd, tag, QByteArray(ascii));
+}
+
+void LibExif::setValue(ExifIfd ifd, ExifTag tag, const QString& ascii)
+{
+    setValue(ifd, tag, ascii.toLatin1());
+}
+
 void LibExif::setValue(ExifIfd ifd, ExifTag tag, const QByteArray& ascii)
 {
-    void *buf;
+    void* memory;
     size_t size = static_cast<size_t>(ascii.size());
     if (size && *ascii.rbegin())
         ++size; // add 1 for the '\0' terminator (supported by QByteArray, see the docs)
@@ -95,30 +117,33 @@ void LibExif::setValue(ExifIfd ifd, ExifTag tag, const QByteArray& ascii)
 
     if (entry)
     {
-        printf("Entry: %s\n", entry->data);
-        // TODO
+        Q_ASSERT(entry->format == EXIF_FORMAT_ASCII); // TODO can format for the tag be changed?
+        if (entry->size == size)
+        {
+            memcpy(entry->data, ascii.data(), size);
+            return;
+        }
+        else
+        {
+            memory = exif_mem_realloc(mAllocator, entry->data, size);
+        }
+    }
+    else
+    {
+        entry = exif_entry_new_mem(mAllocator);
+        memory = exif_mem_alloc(mAllocator, size);
     }
 
-    /* Create a new ExifEntry using our allocator */
-    entry = exif_entry_new_mem(mAllocator);
+    memcpy(memory, ascii.data(), size);
 
-    /* Allocate memory to use for holding the tag data */
-    buf = exif_mem_alloc(mAllocator, size);
-
-    /* Fill in the entry */
-    entry->data = (unsigned char*)buf;
+    entry->data = static_cast<unsigned char*>(memory);
     entry->size = size;
     entry->tag = tag;
     entry->components = entry->size;
     entry->format = EXIF_FORMAT_ASCII;
 
-    /* Attach the ExifEntry to an IFD */
-    exif_content_add_entry(mExifData->ifd[ifd], entry);
-
-    /* The ExifMem and ExifEntry are now owned elsewhere */
-    exif_entry_unref(entry);
-
-    memcpy(entry->data, ascii.data(), size);
+    exif_content_add_entry(mExifData->ifd[ifd], entry); // Attach the ExifEntry to an IFD
+    exif_entry_unref(entry); // ExifEntry are now owned elsewhere
 }
 
 QByteArray LibExif::ascii(ExifIfd ifd, ExifTag tag) const

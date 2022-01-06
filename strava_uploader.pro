@@ -2,8 +2,11 @@ QT       += core gui widgets quick location positioning quickwidgets
 
 CONFIG += c++17
 
+include(src/3rdparty/libexif/libexif.pri)
+include(src/3rdparty/libjpeg/libjpeg.pri)
+
 SOURCES += \
-    src/3rdparty/sigvdr.de/qexifimageheader.cpp \
+    src/gpx/libexif.cpp \
     src/gpx/loader.cpp \
     src/gpx/saver.cpp \
     src/main.cpp \
@@ -14,8 +17,8 @@ SOURCES += \
     src/timeadjustwidget.cpp \
 
 HEADERS += \
-    src/3rdparty/sigvdr.de/qexifimageheader.h \
     src/abstractsettings.h \
+    src/gpx/libexif.h \
     src/gpx/loader.h \
     src/gpx/saver.h \
     src/gpx/track.h \
