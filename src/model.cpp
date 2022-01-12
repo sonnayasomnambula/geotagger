@@ -142,8 +142,7 @@ bool jpeg::Saver::save(const QList<Photo>& items, qint64 addsecs)
     {
         emit progress(i++, items.size());
 
-        // we should only save the file if it does not have its own GPS tag
-        if (!item.haveGPSCoord())
+        if (item.coordGuessed())
         {
             Exif::File exif;
             if (!exif.load(item.path)) {
@@ -362,6 +361,7 @@ void Model::guessPhotoCoordinates()
         if (i == mTrack.begin() || i == mTrack.end()) {
             qWarning() << item.name << item.time.addSecs(mTimeAdjust) << "is beyond track time";
             item.position = {}; // clear position if guessed earlier
+            item.flags &= ~jpeg::Photo::Exif::CoordGuessed;
             continue;
         }
         const QGeoPositionInfo& after = *i;
@@ -371,6 +371,7 @@ void Model::guessPhotoCoordinates()
 //                              item.time.time().toString() <<
 //                              after.timestamp().time().toString();
         item.setPosition(GPX::interpolated(before, after, item.time.addSecs(mTimeAdjust)));
+        item.flags |= jpeg::Photo::Exif::CoordGuessed;
     }
     endResetModel();
 }

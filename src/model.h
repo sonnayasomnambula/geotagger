@@ -29,6 +29,7 @@ struct Photo
 
     bool haveShotTime() const { return flags & Exif::HaveShotTime; }
     bool haveGPSCoord() const { return flags & Exif::HaveGpsCoord; }
+    bool coordGuessed() const { return flags & Exif::CoordGuessed; }
 
     double lat() const { return position.x(); }
     double lon() const { return position.y(); }
@@ -40,6 +41,7 @@ struct Photo
         {
             HaveShotTime    = 0x01,
             HaveGpsCoord    = 0x02,
+            CoordGuessed    = 0x04,
         };
     };
 };
