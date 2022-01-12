@@ -1,6 +1,6 @@
 #include "selectionwatcher.h"
 
-void SelectionWatcher::setCurrent(const QString& current)
+void SelectionWatcher::setCurrent(int current)
 {
     if (current != mCurrent) {
         mCurrent = current;

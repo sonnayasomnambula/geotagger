@@ -67,8 +67,8 @@ public:
     using QStyledItemDelegate::QStyledItemDelegate;
     QString displayText(const QVariant& value, const QLocale& /*locale*/) const override {
         if (!value.isValid()) return "";
-        GeoPoint p = value.toPointF();
-        return QGeoCoordinate(p.lat(), p.lon()).toString(QGeoCoordinate::DegreesWithHemisphere);
+        auto p = value.toPointF();
+        return QGeoCoordinate(p.x(), p.y()).toString(QGeoCoordinate::DegreesWithHemisphere);
     }
 };
 
@@ -134,23 +134,22 @@ MainWindow::MainWindow(QWidget* parent) :
     ui->map->setSource(QUrl("qrc:///qml/map.qml"));
 
     ui->photos->setModel(mModel);
-    ui->photos->setItemDelegateForColumn(Model::TableHeader::Time, new TimeDelegate(this));
-    ui->photos->setItemDelegateForColumn(Model::TableHeader::Position, new GeoCoordinateDelegate(this));
+    ui->photos->setItemDelegateForColumn(Model::Section::Time, new TimeDelegate(this));
+    ui->photos->setItemDelegateForColumn(Model::Section::Position, new GeoCoordinateDelegate(this));
+
+    QAction * actionRemove = new QAction(tr("Remove"), this);
+    actionRemove->setShortcut(QKeySequence::Delete);
+    connect(actionRemove, &QAction::triggered, this, [this]{
+        mModel->remove(ui->photos->selectionModel()->selectedRows());
+    });
+    ui->photos->addAction(actionRemove);
 
     connect(ui->photos->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onCurrentChanged);
 //    connect(mSelection, &SelectionWatcher::currentChanged, mModel, &Model::photosChanged);
-    connect(mSelection, &SelectionWatcher::currentChanged, this, [this](const QString& path){
-        QString current = mModel->data(ui->photos->currentIndex(), Model::Role::Path).toString();
-        if (path != current) {
-            ui->photos->setCurrentIndex(mModel->index(path));
-        }
+    connect(mSelection, &SelectionWatcher::currentChanged, this, [this](int current){
+        ui->photos->setCurrentIndex(mModel->index(current));
     });
 
-    connect(mModel, &Model::progress, this, [this](int i, int total){
-        ui->progressBar->setMaximum(total);
-        ui->progressBar->setValue(i);
-        ui->progressBar->setVisible(i != total);
-    });
     ui->progressBar->hide();
 
     connect(mModel, &Model::trackChanged, this, [this]{
@@ -167,7 +166,7 @@ MainWindow::MainWindow(QWidget* parent) :
         ui->finishTime->setText(finish.toString());
     });
 
-    connect(mModel, &Model::photosChanged, this, [this]{
+    connect(mModel, &Model::dataChanged, this, [this]{
         ui->actionSave_EXIF->setEnabled(mModel->rowCount() > 0);
     });
     ui->actionSave_EXIF->setEnabled(mModel->rowCount() > 0);
@@ -217,7 +216,7 @@ void MainWindow::dropEvent(QDropEvent* e)
     if (!dropped.gpx.isEmpty())
         loadGPX(dropped.gpx);
     if (!dropped.photos.isEmpty())
-        loadPhotos(dropped.photos);
+        addPhotos(dropped.photos);
 }
 
 MainWindow::~MainWindow()
@@ -242,7 +241,7 @@ void MainWindow::restoreSession()
     if (!restore || gpx.isEmpty() || photos.isEmpty()) return;
 
     loadGPX(gpx);
-    loadPhotos(photos);
+    addPhotos(photos);
 }
 
 void MainWindow::loadSettings()
@@ -278,6 +277,11 @@ void MainWindow::saveSettings()
     settings.adjustTimestamp.m = ui->timeAdjistWidget->minutes();
     settings.adjustTimestamp.s = ui->timeAdjistWidget->seconds();
 
+    QStringList photos;
+    for (int row = 0; row < mModel->rowCount(); ++row)
+        photos += mModel->data(mModel->index(row), Model::Role::Path).toString();
+    settings.session.photos = photos;
+
     settings.session.restore = ui->actionRestore_session_on_startup->isChecked();
 }
 
@@ -298,7 +302,7 @@ void MainWindow::onCurrentChanged(const QModelIndex& index)
                                 .arg(pix.width())
                                 .arg(pix.height())
                                 .arg(QLocale().formattedDataSize(QFileInfo(fileName).size())));
-    mSelection->setCurrent(fileName);
+    mSelection->setCurrent(index.row());
 }
 
 bool MainWindow::warn(const QString& title, const QString& message)
@@ -339,8 +343,7 @@ bool MainWindow::loadGPX(const QString& fileName)
     mModel->setCenter(loader.center());
     mModel->setZoom(9); // TODO
 
-    Settings settings;
-    settings.session.gpx = fileName;
+    Settings().session.gpx = fileName;
 
     return true;
 }
@@ -360,15 +363,39 @@ void MainWindow::on_actionLoadPhotos_triggered()
         settings.dirs.gpx = directory;
 
     std::sort(names.begin(), names.end());
-    loadPhotos(names);
+    addPhotos(names);
 }
 
-bool MainWindow::loadPhotos(const QStringList& fileNames)
+template <class ProgressSignaller>
+class ProgressHandler
 {
-    if (!mModel->setPhotos(fileNames))
-        return warn(tr("Unable to load photos"), mModel->lastError());
+    QProgressBar* mProgressBar;
 
-    Settings().session.photos = fileNames;
+public:
+    ProgressHandler(ProgressSignaller* signaller, QProgressBar* bar) : mProgressBar(bar) {
+        Q_ASSERT(mProgressBar);
+        QObject::connect(signaller, &ProgressSignaller::progress, signaller, [this](int current, int total){
+            mProgressBar->setMaximum(total);
+            mProgressBar->setValue(current);
+        });
+        mProgressBar->setValue(0);
+        mProgressBar->show();
+    }
+
+    ~ProgressHandler() { mProgressBar->hide(); }
+};
+
+bool MainWindow::addPhotos(const QStringList& fileNames)
+{
+    jpeg::Loader loader;
+    ProgressHandler progressHandler(&loader, ui->progressBar);
+
+    if (!loader.load(fileNames))
+        return warn(tr("Unable to load photos"), loader.errors.join("\n"));
+
+    mModel->add(loader.loaded);
+    mModel->setCenter(loader.center);
+    mModel->setZoom(9); // TODO
 
     return true;
 }
@@ -391,13 +418,16 @@ void MainWindow::on_actionSave_EXIF_triggered()
     if (QMessageBox::question(this, "", tr("Overwrite existing files?")) != QMessageBox::Yes)
         return;
 
-    if (!mModel->savePhotos()) {
-        QMessageBox::warning(this, tr("Save failed"), mModel->lastError());
+    jpeg::Saver saver;
+    ProgressHandler progressHandler(&saver, ui->progressBar);
+
+    if (!saver.save(mModel->photos(), mModel->timeAdjust())) {
+        warn(tr("Save failed"), saver.errors.join("\n"));
         return;
     }
 
     QMessageBox::information(this, "", tr("Saved succesfully"));
 
-    QString firstFile = mModel->data(static_cast<const QAbstractItemModel*>(mModel)->index(0, 0), Model::Role::Path).toString();
+    QString firstFile = mModel->data(mModel->index(0, 0), Model::Role::Path).toString();
     QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(firstFile).absolutePath()));
 }

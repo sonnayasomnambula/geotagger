@@ -28,6 +28,14 @@ public:
             return *this;
         }
 
+        Tag& operator +=(const T& value) {
+            QSettings settings;
+            T existing = settings.value(mKey).template value<T>();
+            existing += value;
+            settings.setValue(mKey, existing);
+            return *this;
+        }
+
         bool isNull() const {
             return !QSettings().contains(mKey);
         }

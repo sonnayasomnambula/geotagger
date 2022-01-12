@@ -2,10 +2,31 @@
 #define GPX_LOADER_H
 
 #include <QCoreApplication>
+#include <QPointF>
 
 #include "track.h"
 
 class QGeoPath;
+
+class Statistic
+{
+public:
+    void add(double lat, double lon) {
+        mSum += QPointF(lat, lon);
+        mTotal++;
+    }
+
+    QGeoCoordinate center() const {
+        return QGeoCoordinate(mSum.x() / mTotal, mSum.y() / mTotal);
+    }
+
+    int total() const { return mTotal; }
+
+private:
+    QPointF mSum;
+    QGeoCoordinate mLatMax, mLatMin, mLonMax, mLonMin;
+    int mTotal = 0;
+};
 
 namespace GPX
 {
@@ -23,12 +44,6 @@ public:
     Track track() const { return mTrack; }
     QString name() const { return mName; }
     QGeoCoordinate center() const { return mCenter; }
-
-    static QGeoCoordinate fromExifLatLon(const QVector<QPair<quint32, quint32>>& lat,
-                                         const QString& latRef,
-                                         const QVector<QPair<quint32, quint32>>& lon,
-                                         const QString& lonRef);
-    static double fromExifAltitude(const QVector<QPair<quint32, quint32>>& rationale, const QString& ref);
 
 private:
     bool warn(const QString& text);

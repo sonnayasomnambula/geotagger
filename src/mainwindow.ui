@@ -50,6 +50,9 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ActionsContextMenu</enum>
+          </property>
          </widget>
         </item>
         <item>
@@ -158,7 +161,7 @@
      <x>0</x>
      <y>0</y>
      <width>1227</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">

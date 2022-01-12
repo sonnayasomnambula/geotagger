@@ -6,9 +6,8 @@ include(src/3rdparty/libexif/libexif.pri)
 include(src/3rdparty/libjpeg/libjpeg.pri)
 
 SOURCES += \
-    src/gpx/libexif.cpp \
+    src/exif.cpp \
     src/gpx/loader.cpp \
-    src/gpx/saver.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/model.cpp \
@@ -18,9 +17,8 @@ SOURCES += \
 
 HEADERS += \
     src/abstractsettings.h \
-    src/gpx/libexif.h \
+    src/exif.h \
     src/gpx/loader.h \
-    src/gpx/saver.h \
     src/gpx/track.h \
     src/mainwindow.h \
     src/model.h \

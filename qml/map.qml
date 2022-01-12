@@ -4,14 +4,12 @@ import QtPositioning 5.6
 import QtQuick.Shapes 1.1
 
 Rectangle {
-//    anchors.fill: parent
-
     Map {
         id: map
         anchors.fill: parent
         plugin: Plugin { name: "osm"; }
         center:  QtPositioning.coordinate(59.91, 10.75) // Oslo
-        zoomLevel: 3
+        zoomLevel: 5
 
         MapPolyline {
             id: track
@@ -49,8 +47,8 @@ Rectangle {
                     }
 
                     Text {
-                        text: _base_name_
-                        color: selection.current == _path_ ? "blue" : "black"
+                        text: _name_
+                        color: selection.current === _index_ ? "blue" : "black"
                         anchors.horizontalCenter: pic.horizontalCenter
                         anchors.bottom: pic.top
                         anchors.topMargin: 5
@@ -58,7 +56,7 @@ Rectangle {
 
                     ShapePath {
                         id: shape
-                        strokeColor: selection.current == _path_ ? "blue" : "black"
+                        strokeColor: selection.current === _index_ ? "blue" : "black"
 
                         property real half: thumbnail.width * 0.5
                         property real quarter: thumbnail.width * 0.25
@@ -81,7 +79,7 @@ Rectangle {
 
                     MouseArea {
                         anchors.fill: parent
-                        onClicked: { selection.current = _path_ }
+                        onClicked: { selection.current = _index_ }
                     }
                 }
             }

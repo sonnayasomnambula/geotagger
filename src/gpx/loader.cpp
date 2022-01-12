@@ -37,26 +37,6 @@ QGeoCoordinate GPX::interpolated(const QGeoPositionInfo& before, const QGeoPosit
     return QGeoCoordinate(lat, lon, alt);
 }
 
-class Statistic
-{
-public:
-    void add(double lat, double lon) {
-        mSum += QPointF(lat, lon);
-        mTotal++;
-    }
-
-    QGeoCoordinate center() const {
-        return QGeoCoordinate(mSum.x() / mTotal, mSum.y() / mTotal);
-    }
-
-    int total() const { return mTotal; }
-
-private:
-    QPointF mSum;
-    QGeoCoordinate mLatMax, mLatMin, mLonMax, mLonMin;
-    int mTotal = 0;
-};
-
 class XmlElement
 {
     QXmlStreamReader* mXml;
@@ -168,56 +148,6 @@ bool GPX::Loader::load(const QString& url)
     mCenter = stat.center();
 
     return true;
-}
-
-QGeoCoordinate GPX::Loader::fromExifLatLon(const QVector<QPair<quint32, quint32>>& lat, const QString& latRef,
-                                           const QVector<QPair<quint32, quint32>>& lon, const QString& lonRef)
-{
-    if (lat.size() != 3 || lon.size() != 3) {
-        qWarning() << "Unsupported latlon format" << lat << latRef << lon << lonRef;
-        return {};
-    }
-
-    class DMS {
-        double d, m, s;
-    public:
-        explicit DMS(const QVector<QPair<quint32, quint32>>& value) :
-            d(1.0 * value[0].first / value[0].second),
-            m(1.0 * value[1].first / value[1].second),
-            s(1.0 * value[2].first / value[2].second)
-        {}
-        double join() { return d + m / 60 + s / 60 / 60; }
-    };
-
-    double llat = DMS(lat).join();
-    double llon = DMS(lon).join();
-
-    if (latRef == "S")
-        llat = -llat;
-    if (lonRef == "W")
-        llon = -llon;
-
-//    if (lat != Saver::toExifLatitude(llat))
-//        qWarning() << "ACHTUNG!!111" << lat << Saver::toExifLatitude(llat);
-
-//    if (lon != Saver::toExifLatitude(llon))
-//        qWarning() << "ACHTUNG!!111" << lon << Saver::toExifLatitude(llon);
-
-    return QGeoCoordinate(llat, llon);
-}
-
-double GPX::Loader::fromExifAltitude(const QVector<QPair<quint32, quint32>>& rationale, const QString& ref)
-{
-    if (rationale.size() != 1) {
-        qWarning() << "Unsupported altitude format" << rationale << ref;
-        return 0.;
-    }
-
-    double alt = 1.0 * rationale.first().first / rationale.first().second;
-    if (!ref.isEmpty()) // TODO check this
-        alt = -alt;
-
-    return alt;
 }
 
 bool GPX::Loader::warn(const QString& text)

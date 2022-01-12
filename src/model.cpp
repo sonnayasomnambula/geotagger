@@ -7,10 +7,9 @@
 #include <QPixmap>
 #include <QPointF>
 
-#include "gpx/libexif.h"
 #include "gpx/loader.h"
-#include "gpx/saver.h"
 #include "gpx/track.h"
+#include "exif.h"
 
 namespace Pics
 {
@@ -35,66 +34,63 @@ QString toBase64(const QPixmap& pixmap)
 
 } // namespace Pics
 
-GeoPoint::GeoPoint(const QGeoCoordinate & coord) :
-    QPointF(coord.latitude(), coord.longitude())
-{
 
+void jpeg::Photo::setPosition(const QGeoCoordinate& coord)
+{
+    position = { coord.latitude(), coord.longitude() };
 }
 
-Model::Model(QObject *parent)
-    : QAbstractListModel(parent)
+
+bool jpeg::Loader::load(const QStringList& fileNames)
 {
-    connect(this, &Model::photosChanged, this, &Model::guessPhotoCoordinates);
-    connect(this, &Model::trackChanged, this, &Model::guessPhotoCoordinates);
-}
+    if (fileNames.isEmpty()) return true;
 
-bool Model::setPhotos(const QList<FilePath>& files)
-{
-    if (files.isEmpty()) return false;
+    errors.clear();
+    Statistic stat;
 
-    beginResetModel();
-
-    mPhotos.clear();
-    mData.clear();
-    mErrors.clear();
-
-    for (const QString& name: files)
+    for (QFileInfo file: fileNames)
     {
-        QFileInfo file(name);
+        emit progress(stat.total(), fileNames.size());
+
         if (!file.exists())
         {
-            mErrors.append(tr("Unable to add '%1': no such file").arg(name));
+            errors.append(tr("Unable to add '%1': no such file").arg(file.absoluteFilePath()));
             continue;
         }
+
+        // TODO check if already contains
 
         Photo item;
-        item.baseName = file.baseName();
+        item.path = file.absoluteFilePath();
+        item.name = file.baseName();
         item.time = file.lastModified();
 
-        LibExif exif;
-        if (!exif.load(name))
+        Exif::File exif;
+        if (!exif.load(file.absoluteFilePath()))
         {
-            mErrors.append(tr("Unable to read EXIF from '%1'").arg(name));
+            errors.append(tr("Unable to read EXIF from '%1'").arg(file.absoluteFilePath()));
             continue;
         }
 
         {
-            auto lat = exif.uRationalVector(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE);
-            auto lon = exif.uRationalVector(EXIF_IFD_GPS, EXIF::TAG::GPS::LONGITUDE);
-            auto alt = exif.uRationalVector(EXIF_IFD_GPS, EXIF::TAG::GPS::ALTITUDE);
-            auto latRef = exif.ascii(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE_REF);
-            auto lonRef = exif.ascii(EXIF_IFD_GPS, EXIF::TAG::GPS::LONGITUDE_REF);
-            auto altRef = exif.ascii(EXIF_IFD_GPS, EXIF::TAG::GPS::ALTITUDE_REF);
+            auto lat = exif.uRationalVector(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE);
+            auto lon = exif.uRationalVector(EXIF_IFD_GPS, Exif::Tag::GPS::LONGITUDE);
+            auto alt = exif.uRationalVector(EXIF_IFD_GPS, Exif::Tag::GPS::ALTITUDE);
+            auto latRef = exif.ascii(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE_REF);
+            auto lonRef = exif.ascii(EXIF_IFD_GPS, Exif::Tag::GPS::LONGITUDE_REF);
+            auto altRef = exif.ascii(EXIF_IFD_GPS, Exif::Tag::GPS::ALTITUDE_REF);
 
             if (!lat.isEmpty() && !lon.isEmpty() && !latRef.isEmpty() && !lonRef.isEmpty())
             {
-                item.position = GPX::Loader::fromExifLatLon(lat, latRef, lon, lonRef);
+                item.setPosition(Exif::Utils::fromLatLon(lat, latRef, lon, lonRef));
                 if (!alt.isEmpty() && !altRef.isEmpty())
                 {
-                    item.altitude = GPX::Loader::fromExifAltitude(alt, altRef);
+                    item.altitude = Exif::Utils::fromSingleRational(alt, altRef);
                 }
 
                 item.flags |= Photo::Exif::HaveGpsCoord;
+
+                stat.add(item.lat(), item.lon());
             }
         }
 
@@ -102,9 +98,10 @@ bool Model::setPhotos(const QList<FilePath>& files)
             QByteArray timeString = exif.ascii(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED);
             if (timeString.isEmpty())
                 timeString = exif.ascii(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL);
+            // we can also check EXIF_TAG_DATE_TIME in EXIF_IFD_0,
+            // however this one may be the file editing / raw export time
             if (timeString.isEmpty())
                 timeString = exif.ascii(EXIF_IFD_0, EXIF_TAG_DATE_TIME);
-            qDebug().noquote() << item.baseName << timeString;
             QString pattern = "yyyy:MM:dd hh:mm:ss";
             if (timeString.size() == pattern.size())
             {
@@ -121,22 +118,70 @@ bool Model::setPhotos(const QList<FilePath>& files)
             // TODO move to thread
             // TODO use exif thumbnail
             QPixmap pix;
-            if (!pix.load(name))
+            if (!pix.load(item.path))
                 item.pixmap = ":/img/not_available.png";
             else
                 item.pixmap = Pics::toBase64(Pics::thumbnail(pix, 32));
         }
 
-        mPhotos.append(name);
-        mData.insert(name, item);
-
-        emit progress(mPhotos.size(), files.size());
+        loaded.append(item);
     }
 
-    endResetModel();
-    emit photosChanged();
+    center = stat.center();
 
     return true;
+}
+
+// TODO add QDir where to save
+bool jpeg::Saver::save(const QList<Photo>& items, qint64 addsecs)
+{
+    errors.clear();
+
+    int i = 0;
+    for (const Photo& item : items)
+    {
+        emit progress(i++, items.size());
+
+        // we should only save the file if it does not have its own GPS tag
+        if (!item.haveGPSCoord())
+        {
+            Exif::File exif;
+            if (!exif.load(item.path)) {
+                errors.append(tr("Unable to read EXIF from '%1'").arg(item.path));
+                continue;
+            }
+
+            exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE, Exif::Utils::toDMS(item.lat()));
+            exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE_REF, Exif::Utils::toLatitudeRef(item.lat()));
+            exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::LONGITUDE, Exif::Utils::toDMS(item.lon()));
+            exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::LONGITUDE_REF, Exif::Utils::toLongitudeRef(item.lon()));
+            exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::ALTITUDE, Exif::Utils::toSingleRational(item.altitude));
+            exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::ALTITUDE_REF, Exif::Utils::toAltitudeRef(item.altitude));
+
+            if (addsecs && item.time.isValid()) {
+                const QString pattern = "yyyy:MM:dd hh:mm:ss";
+                const QByteArray timeString = item.time.addSecs(addsecs).toString(pattern).toLatin1();
+                exif.setValue(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL, timeString);
+                exif.setValue(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED, timeString);
+            }
+
+            // TODO save as
+            if (!exif.save(item.path)) {
+                errors.append(tr("Unable to save EXIF to '%1'").arg(item.path));
+                continue;
+            }
+        }
+    }
+
+    return errors.isEmpty();
+}
+
+
+Model::Model(QObject *parent)
+    : QAbstractListModel(parent)
+{
+    connect(this, &Model::dataChanged, this, &Model::guessPhotoCoordinates);
+    connect(this, &Model::trackChanged, this, &Model::guessPhotoCoordinates);
 }
 
 void Model::setTrack(const GPX::Track& track)
@@ -151,6 +196,25 @@ void Model::setTrack(const GPX::Track& track)
         mPath.addCoordinate(point.coordinate());
 
     emit trackChanged();
+}
+
+void Model::add(const QList<jpeg::Photo> photos)
+{
+    QSet<QString> existing;
+    for (const jpeg::Photo& item: qAsConst(mPhotos))
+        existing.insert(item.path);
+
+    for (const jpeg::Photo& item: qAsConst(photos))
+    {
+        if (!existing.contains(item.path))
+        {
+            existing.insert(item.path);
+
+            beginInsertRows({}, rowCount(), rowCount());
+            mPhotos += item;
+            endInsertRows();
+        }
+    }
 }
 
 void Model::setCenter(const QGeoCoordinate& center)
@@ -169,66 +233,38 @@ void Model::setZoom(int zoom)
     }
 }
 
-bool Model::savePhotos()
+void Model::remove(const QModelIndexList& indexes)
 {
-    mErrors.clear();
-
-    for (auto i = mData.begin(); i != mData.end(); ++i) {
-        const FilePath& name = i.key();
-        const Photo&    item = i.value();
-        if (item.haveGPSCoord() && item.haveShotTime()) continue;
-
-        LibExif exif;
-        if (!exif.load(name)) {
-            mErrors.append(tr("Unable to read EXIF from '%1'").arg(name));
-            continue;
-        }
-
-        if (!item.haveGPSCoord()) {
-            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE, GPX::Saver::toExifLatitude(item.position.lat()));
-            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LATITUDE_REF, GPX::Saver::toExifLatitudeRef(item.position.lat()));
-            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LONGITUDE, GPX::Saver::toExifLongitude(item.position.lon()));
-            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::LONGITUDE_REF, GPX::Saver::toExifLongitudeRef(item.position.lon()));
-            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::ALTITUDE, GPX::Saver::toExifAltitude(item.altitude));
-            exif.setValue(EXIF_IFD_GPS, EXIF::TAG::GPS::ALTITUDE_REF, GPX::Saver::toExifAltitudeRef(item.altitude));
-        }
-
-        const bool timeModified = !item.haveGPSCoord() && mTimeAdjust != 0;
-        if ((!item.haveShotTime() || timeModified) && item.time.isValid()) {
-            const QString pattern = "yyyy:MM:dd hh:mm:ss";
-            const QString timeString = item.time.toString(pattern);
-            exif.setValue(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL, timeString);
-        }
-
-        if (!exif.save(name)) {
-            mErrors.append(tr("Unable to save EXIF to '%1'").arg(name));
+    QList<QPersistentModelIndex> persistent;
+    for (const auto& i: indexes)
+        persistent.append(QPersistentModelIndex(i));
+    for (const auto& i: persistent)
+    {
+        if (i.isValid() && i.row() < rowCount())
+        {
+            beginRemoveRows({}, i.row(), i.row());
+            mPhotos.removeAt(i.row());
+            endRemoveRows();
         }
     }
-
-    return mErrors.isEmpty();
-}
-
-QGeoCoordinate Model::coordinate(const QString& name) const
-{
-    const auto i = mData.find(name);
-    if (i == mData.end())
-        return QGeoCoordinate();
-
-    const Photo& item = *i;
-    return QGeoCoordinate(item.position.lat(), item.position.lon(), item.altitude);
-}
-
-QString Model::lastError() const
-{
-    return mErrors.join("\n");
 }
 
 QVariant Model::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (role != Qt::DisplayRole) return {};
-    if (orientation != Qt::Horizontal) return {};
+    if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
+    {
+        switch (section)
+        {
+        case Section::Name:
+            return tr("Name");
+        case Section::Time:
+            return tr("Time");
+        case Section::Position:
+            return tr("Position");
+        }
+    }
 
-    return TableHeader::name(section);
+    return {};
 }
 
 int Model::rowCount(const QModelIndex &parent) const
@@ -238,7 +274,7 @@ int Model::rowCount(const QModelIndex &parent) const
     if (parent.isValid())
         return 0;
 
-    return mData.size();
+    return mPhotos.size();
 }
 
 int Model::columnCount(const QModelIndex & parent) const
@@ -246,38 +282,29 @@ int Model::columnCount(const QModelIndex & parent) const
     if (parent.isValid())
         return 0;
 
-    return TableHeader::Count;
+    return Section::Count;
 }
 
 QVariant Model::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid())
+    if (!index.isValid() || index.row() >= mPhotos.size())
         return {};
 
-    if (index.row() >= mPhotos.size())
-        return {};
-
-    const QString& path = mPhotos.at(index.row());
-
-    if (role == Role::Path)
-        return path;
-
-    Q_ASSERT(mData.contains(path));
-    const Photo& item = mData[path];
+    const jpeg::Photo& item = mPhotos[index.row()];
 
     if (role == Qt::DisplayRole)
     {
         switch (index.column())
         {
-        case TableHeader::Name:      return item.baseName;
-        case TableHeader::Time:      return item.flags & Photo::Exif::HaveGpsCoord ? item.time : item.time.addSecs(mTimeAdjust);
-        case TableHeader::Position:  return item.position;
+        case Section::Name:      return item.name;
+        case Section::Time:      return item.haveGPSCoord() ? item.time : item.time.addSecs(mTimeAdjust);
+        case Section::Position:  return item.position;
         default:                     return {};
         }
     }
 
     if (role == Qt::ToolTipRole)
-        return tooltip(path, item);
+        return tooltip(item);
 
 
     if (role == Qt::ForegroundRole)
@@ -285,23 +312,29 @@ QVariant Model::data(const QModelIndex &index, int role) const
         // TODO use palette?
         switch (index.column())
         {
-        case TableHeader::Time:
-            return QColor(item.flags & Photo::Exif::HaveShotTime ? Qt::black : Qt::gray);
-        case TableHeader::Position:
-            return QColor(item.flags & Photo::Exif::HaveGpsCoord ? Qt::black : Qt::gray);
+        case Section::Time:
+            return QColor(item.haveShotTime() ? Qt::black : Qt::gray);
+        case Section::Position:
+            return QColor(item.haveGPSCoord() ? Qt::black : Qt::gray);
         default:
             return QColor(Qt::black);
         }
     }
 
-    if (role == Role::BaseName)
-        return item.baseName;
+    if (role == Role::Index)
+        return index.row();
+
+    if (role == Role::Path)
+        return item.path;
+
+    if (role == Role::Name)
+        return item.name;
 
     if (role == Role::Latitude)
-        return item.position.lat();
+        return item.lat();
 
     if (role == Role::Longitude)
-        return item.position.lon();
+        return item.lon();
 
     if (role == Role::Altitude)
         return item.altitude;
@@ -312,32 +345,23 @@ QVariant Model::data(const QModelIndex &index, int role) const
     return {};
 }
 
-QModelIndex Model::index(const QString& data)
-{
-    int row = mPhotos.indexOf(data);
-    if (row < 0) return {};
-
-    return QAbstractListModel::index(row, 0);
-}
-
 void Model::guessPhotoCoordinates()
 {
-    if (mPath.isEmpty() || mData.isEmpty()) return;
+    if (mTrack.isEmpty() || mPhotos.isEmpty()) return;
 
     beginResetModel();
-    for (const auto& key: mData.keys())
+    for (auto& item: mPhotos)
     {
-        Photo& item = mData[key];
         if (item.time.isNull())
             continue;
-        if (item.flags & Photo::Exif::HaveGpsCoord)
+        if (item.haveGPSCoord())
             continue;
 
         auto i = std::find_if(mTrack.begin(), mTrack.end(), [time = item.time.addSecs(mTimeAdjust)](const QGeoPositionInfo& info) {
             return info.timestamp() > time; });
         if (i == mTrack.begin() || i == mTrack.end()) {
-            qWarning() << item.baseName << item.time.addSecs(mTimeAdjust) << "is beyond track time";
-            item.position = GeoPoint(); // clear position if guessed earlier
+            qWarning() << item.name << item.time.addSecs(mTimeAdjust) << "is beyond track time";
+            item.position = {}; // clear position if guessed earlier
             continue;
         }
         const QGeoPositionInfo& after = *i;
@@ -346,31 +370,29 @@ void Model::guessPhotoCoordinates()
 //                              before.timestamp().time().toString() <<
 //                              item.time.time().toString() <<
 //                              after.timestamp().time().toString();
-        item.position = GeoPoint(GPX::interpolated(before, after, item.time.addSecs(mTimeAdjust)));
+        item.setPosition(GPX::interpolated(before, after, item.time.addSecs(mTimeAdjust)));
     }
     endResetModel();
 }
 
-Model::Photo Model::item(int row) const
+const jpeg::Photo& Model::item(int row) const
 {
-    if (row < 0 || row >= mPhotos.size()) return Photo();
-
-    const QString& name = mPhotos.at(row);
-    return mData.value(name);
+    static jpeg::Photo empty;
+    return (row < 0 || row >= mPhotos.size()) ? empty : mPhotos[row];
 }
 
-QString Model::tooltip(const QString& path, const Model::Photo& item)
+QString Model::tooltip(const jpeg::Photo& item)
 {
     QStringList strings;
 
-    strings.append(path);
+    strings.append(item.path);
 
-    if (item.flags & Photo::Exif::HaveShotTime)
+    if (item.haveShotTime())
         strings.append(tr("EXIF have shot time"));
     else
         strings.append(tr("EXIF have no shot time"));
 
-    if (item.flags & Photo::Exif::HaveGpsCoord)
+    if (item.haveGPSCoord())
         strings.append(tr("EXIF have GPS tag"));
     else
         strings.append(tr("EXIF have no GPS tag"));
@@ -381,29 +403,11 @@ QString Model::tooltip(const QString& path, const Model::Photo& item)
 QHash<int, QByteArray> Model::roleNames() const
 {
     QHash<int, QByteArray> roles;
-
+    roles[Role::Index] = "_index_";
     roles[Role::Path] = "_path_";
-    roles[Role::BaseName] = "_base_name_";
+    roles[Role::Name] = "_name_";
     roles[Role::Latitude] = "_latitude_";
     roles[Role::Longitude] = "_longitude_";
     roles[Role::Pixmap] = "_pixmap_";
-
     return roles;
-}
-
-QVariant Model::TableHeader::name(int section)
-{
-    switch (section)
-    {
-    case Name:
-        return tr("Name");
-    case Time:
-        return tr("Time");
-    case Position:
-        return tr("Position");
-    case Count:
-        return {};
-    }
-
-    return {};
 }

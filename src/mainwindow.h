@@ -10,7 +10,6 @@ class QStringList;
 class QMimeData;
 QT_END_NAMESPACE
 
-class Controller;
 class Model;
 class SelectionWatcher;
 class TimeAdjustWidget;
@@ -43,7 +42,7 @@ private:
     void saveSettings();
 
     bool loadGPX(const QString& fileName);
-    bool loadPhotos(const QStringList & fileNames);
+    bool addPhotos(const QStringList & fileNames);
 
     void onCurrentChanged(const QModelIndex& index);
 

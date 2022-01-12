@@ -8,7 +8,7 @@ QT_BEGIN_NAMESPACE
 class QAbstractItemView;
 QT_END_NAMESPACE
 
-/* The class to pass current selection between C++ and QML */
+/* The class to pass current item between C++ and QML */
 
 class SelectionWatcher : public QObject
 {
@@ -17,17 +17,17 @@ class SelectionWatcher : public QObject
     QML_ELEMENT
 #endif
 
-    Q_PROPERTY(QString current MEMBER mCurrent WRITE setCurrent NOTIFY currentChanged)
+    Q_PROPERTY(int current MEMBER mCurrent WRITE setCurrent NOTIFY currentChanged)
 
 signals:
-    void currentChanged(const QString& current);
+    void currentChanged(int);
 
 public:
     using QObject::QObject;
-    void setCurrent(const QString& current);
+    void setCurrent(int current);
 
 private:
-    QString mCurrent; // full path to the picture
+    int mCurrent = -1; // model index
 };
 
 #endif // SELECTIONWATCHER_H
