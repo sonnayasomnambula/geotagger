@@ -84,7 +84,7 @@ QGeoCoordinate Exif::Utils::fromLatLon(const QVector<ExifRational>& lat, const Q
     return QGeoCoordinate(llat, llon);
 }
 
-double Exif::Utils::fromSingleRational(const QVector<ExifRational>& rational, const QString& ref)
+double Exif::Utils::fromSingleRational(const QVector<ExifRational>& rational, const QByteArray& ref)
 {
     if (rational.size() != 1) {
         qWarning() << "Exif: unsupported altitude format" << rational << ref;

@@ -50,6 +50,8 @@ private:
 
     static QDateTime stringToDateTime(const QString& s);
 
+    static const char* mscModuleName;
+
     Track mTrack;
     QString mName;
     QGeoCoordinate mCenter;

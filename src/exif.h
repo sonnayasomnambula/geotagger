@@ -42,7 +42,7 @@ QByteArray toAltitudeRef(double alt);
 
 QGeoCoordinate fromLatLon(const QVector<ExifRational>& lat, const QByteArray& latRef,
                           const QVector<ExifRational>& lon, const QByteArray& lonRef);
-double fromSingleRational(const QVector<ExifRational>& rational, const QString& ref);
+double fromSingleRational(const QVector<ExifRational>& rational, const QByteArray& ref);
 
 } // namespace Utils
 

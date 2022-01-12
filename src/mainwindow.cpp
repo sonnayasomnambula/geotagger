@@ -1,19 +1,19 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QDateTime>
 #include <QDebug>
 #include <QDesktopServices>
-#include <QPixmap>
-#include <QStandardPaths>
-#include <QSettings>
-#include <QStringList>
+#include <QDirIterator>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QMimeData>
-#include <QStyledItemDelegate>
+#include <QPixmap>
 #include <QQmlContext>
-#include <QDateTime>
-#include <QDirIterator>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QStringList>
+#include <QStyledItemDelegate>
 #include <QTime>
 
 #include "gpx/loader.h"
@@ -234,14 +234,10 @@ void MainWindow::restoreSession()
 {
     Settings settings;
 
-    bool restore = settings.session.restore;
-    QString gpx = settings.session.gpx;
-    QStringList photos = settings.session.photos;
+    if (!settings.session.restore) return;
 
-    if (!restore || gpx.isEmpty() || photos.isEmpty()) return;
-
-    loadGPX(gpx);
-    addPhotos(photos);
+    loadGPX(settings.session.gpx);
+    addPhotos(settings.session.photos);
 }
 
 void MainWindow::loadSettings()
@@ -348,7 +344,7 @@ bool MainWindow::loadGPX(const QString& fileName)
     return true;
 }
 
-void MainWindow::on_actionLoadPhotos_triggered()
+void MainWindow::on_actionAddPhotos_triggered()
 {
     Settings settings;
 
@@ -393,9 +389,12 @@ bool MainWindow::addPhotos(const QStringList& fileNames)
     if (!loader.load(fileNames))
         return warn(tr("Unable to load photos"), loader.errors.join("\n"));
 
-    mModel->add(loader.loaded);
-    mModel->setCenter(loader.center);
-    mModel->setZoom(9); // TODO
+    if (!loader.loaded.isEmpty())
+    {
+        mModel->add(loader.loaded);
+        mModel->setCenter(loader.center);
+        mModel->setZoom(9); // TODO
+    }
 
     return true;
 }

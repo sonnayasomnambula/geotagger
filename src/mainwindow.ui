@@ -161,7 +161,7 @@
      <x>0</x>
      <y>0</y>
      <width>1227</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -169,7 +169,7 @@
      <string>&amp;File</string>
     </property>
     <addaction name="actionLoadTrack"/>
-    <addaction name="actionLoadPhotos"/>
+    <addaction name="actionAddPhotos"/>
     <addaction name="separator"/>
     <addaction name="actionSave_EXIF"/>
     <addaction name="separator"/>
@@ -192,12 +192,12 @@
     <string>Load &amp;track...</string>
    </property>
   </action>
-  <action name="actionLoadPhotos">
+  <action name="actionAddPhotos">
    <property name="text">
-    <string>Load &amp;photos...</string>
+    <string>Add &amp;photos...</string>
    </property>
    <property name="toolTip">
-    <string>Load photos</string>
+    <string>Add photos</string>
    </property>
   </action>
   <action name="actionAdjust_photo_timestamp">

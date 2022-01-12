@@ -19,6 +19,10 @@
 //#undef qDebug
 //#define qDebug QT_NO_QDEBUG_MACRO
 
+
+const char* GPX::Loader::mscModuleName = "GPX::Loader:";
+
+
 inline double linear_interpolation(double v1, double v2, double passed) {
     Q_ASSERT(passed >= 0. && passed < 1.);
     return v1 + (v2 - v1) * passed;
@@ -60,7 +64,7 @@ public:
 
 bool GPX::Loader::load(const QString& url)
 {
-    qInfo() << "Loading" << url << "...";
+    qInfo() << mscModuleName << "loading" << url << "...";
 
     const QString fileName = QUrl(url).path();
 
@@ -139,10 +143,10 @@ bool GPX::Loader::load(const QString& url)
         }
     }
 
-    qDebug() << stat.total() << "point(s) loaded";
+    qDebug() << mscModuleName << stat.total() << "point(s) loaded";
     if (!mTrack.isEmpty() && !mTrack.first().isEmpty() && !mTrack.last().isEmpty()) {
-        qDebug() << "start:" << mTrack.first().first().timestamp();
-        qDebug() << "end:  " << mTrack.last().last().timestamp();
+        qDebug() << mscModuleName << "start:" << mTrack.first().first().timestamp();
+        qDebug() << mscModuleName << "end:  " << mTrack.last().last().timestamp();
     }
 
     mCenter = stat.center();
@@ -153,7 +157,7 @@ bool GPX::Loader::load(const QString& url)
 bool GPX::Loader::warn(const QString& text)
 {
     mLastError = text;
-    qWarning().noquote() << "GPX::Loader:" << mLastError;
+    qWarning().noquote() << mscModuleName << mLastError;
     return false;
 }
 

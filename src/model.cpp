@@ -80,10 +80,10 @@ bool jpeg::Loader::load(const QStringList& fileNames)
             auto lonRef = exif.ascii(EXIF_IFD_GPS, Exif::Tag::GPS::LONGITUDE_REF);
             auto altRef = exif.ascii(EXIF_IFD_GPS, Exif::Tag::GPS::ALTITUDE_REF);
 
-            if (!lat.isEmpty() && !lon.isEmpty() && !latRef.isEmpty() && !lonRef.isEmpty())
+            if (!lat.isEmpty() && !lon.isEmpty())
             {
                 item.setPosition(Exif::Utils::fromLatLon(lat, latRef, lon, lonRef));
-                if (!alt.isEmpty() && !altRef.isEmpty())
+                if (!alt.isEmpty())
                 {
                     item.altitude = Exif::Utils::fromSingleRational(alt, altRef);
                 }

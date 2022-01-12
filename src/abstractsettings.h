@@ -12,6 +12,15 @@ public:
     {
         const QString mKey;
 
+        template <class Operator>
+        Tag& assign(const T& value, Operator op) {
+            QSettings settings;
+            T existing = settings.value(mKey).template value<T>();
+            op(existing, value);
+            settings.setValue(mKey, existing);
+            return *this;
+        }
+
     public:
         Tag(const char* key) : mKey(key) {}
 
@@ -29,11 +38,43 @@ public:
         }
 
         Tag& operator +=(const T& value) {
-            QSettings settings;
-            T existing = settings.value(mKey).template value<T>();
-            existing += value;
-            settings.setValue(mKey, existing);
-            return *this;
+            return assign(value, [](T& op1, const T& op2){ op1 += op2; });
+        }
+
+        Tag& operator -=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 -= op2; });
+        }
+
+        Tag& operator *=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 *= op2; });
+        }
+
+        Tag& operator /=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 /= op2; });
+        }
+
+        Tag& operator %=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 %= op2; });
+        }
+
+        Tag& operator &=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 &= op2; });
+        }
+
+        Tag& operator |=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 |= op2; });
+        }
+
+        Tag& operator ^=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 ^= op2; });
+        }
+
+        Tag& operator <<=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 <<= op2; });
+        }
+
+        Tag& operator >>=(const T& value) {
+            return assign(value, [](T& op1, const T& op2){ op1 >>= op2; });
         }
 
         bool isNull() const {
