@@ -13,11 +13,11 @@ public:
         const QString mKey;
 
         template <class Operator>
-        Tag& assign(const T& value, Operator op) {
+        Tag& modifyWith(const T& modifier, Operator modify) {
             QSettings settings;
-            T existing = settings.value(mKey).template value<T>();
-            op(existing, value);
-            settings.setValue(mKey, existing);
+            T value = settings.value(mKey).template value<T>();
+            modify(value, modifier);
+            settings.setValue(mKey, value);
             return *this;
         }
 
@@ -37,44 +37,44 @@ public:
             return *this;
         }
 
-        Tag& operator +=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 += op2; });
+        Tag& operator +=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value += modifier; });
         }
 
-        Tag& operator -=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 -= op2; });
+        Tag& operator -=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value -= modifier; });
         }
 
-        Tag& operator *=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 *= op2; });
+        Tag& operator *=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value *= modifier; });
         }
 
-        Tag& operator /=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 /= op2; });
+        Tag& operator /=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value /= modifier; });
         }
 
-        Tag& operator %=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 %= op2; });
+        Tag& operator %=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value %= modifier; });
         }
 
-        Tag& operator &=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 &= op2; });
+        Tag& operator &=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value &= modifier; });
         }
 
-        Tag& operator |=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 |= op2; });
+        Tag& operator |=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value |= modifier; });
         }
 
-        Tag& operator ^=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 ^= op2; });
+        Tag& operator ^=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value ^= modifier; });
         }
 
-        Tag& operator <<=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 <<= op2; });
+        Tag& operator <<=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value <<= modifier; });
         }
 
-        Tag& operator >>=(const T& value) {
-            return assign(value, [](T& op1, const T& op2){ op1 >>= op2; });
+        Tag& operator >>=(const T& modifier) {
+            return modifyWith(modifier, [](T& value, const T& modifier){ value >>= modifier; });
         }
 
         bool isNull() const {

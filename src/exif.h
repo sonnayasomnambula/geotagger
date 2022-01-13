@@ -61,7 +61,7 @@ public:
     File();
    ~File();
 
-    bool load(const QString& fileName);
+    bool load(const QString& fileName, bool createIfEmpty = true);
     bool save(const QString& fileName);
 
     void setValue(ExifIfd ifd, ExifTag tag, const QVector<ExifRational> urational);

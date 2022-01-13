@@ -14,7 +14,7 @@ TEST(libexif, DISABLED_trivial)
     QString jpeg = TmpJpegFile::withoutGps();
     ASSERT_FALSE(jpeg.isEmpty());
 
-    ExifData* d = exif_data_new_from_file(jpeg.toStdString().c_str());
+    ExifData* d = exif_data_new_from_file(jpeg.toLocal8Bit().data());
     ASSERT_TRUE(d);
 
     exif_data_foreach_content(d, [](ExifContent* content, void*){

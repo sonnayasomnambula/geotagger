@@ -64,7 +64,7 @@ TEST(libexif, replace)
 
     {
         Exif::File exif;
-        ASSERT_TRUE(exif.load(jpeg));
+        ASSERT_TRUE(exif.load(jpeg, false));
         const QByteArray previous = exif.ascii(ifd, tag);
         ASSERT_FALSE(previous.isEmpty());
 

@@ -112,14 +112,16 @@ Exif::File::~File()
 
 /// \brief load all EXIF tags from \a fileName;
 /// creates an empty storage if there are no tags int the file
-bool Exif::File::load(const QString& fileName)
+bool Exif::File::load(const QString& fileName, bool createIfEmpty)
 {
     mFileName = fileName;
 
-    mExifData = exif_data_new_from_file(mFileName.toStdString().c_str());
+    mExifData = exif_data_new_from_file(mFileName.toLocal8Bit().data());
     if (!mExifData)
     {
-        // maybe return false?
+        if (!createIfEmpty)
+            return false;
+
         mExifData = exif_data_new();
         exif_data_fix(mExifData);
     }
@@ -133,9 +135,9 @@ bool Exif::File::load(const QString& fileName)
 
 bool Exif::File::save(const QString& fileName)
 {
-    JPEGData * jpegData = jpeg_data_new_from_file(mFileName.toStdString().c_str());
+    JPEGData * jpegData = jpeg_data_new_from_file(mFileName.toLocal8Bit().data());
     jpeg_data_set_exif_data(jpegData, mExifData);
-    return jpeg_data_save_file(jpegData, fileName.toStdString().c_str());
+    return jpeg_data_save_file(jpegData, fileName.toLocal8Bit().data());
 }
 
 void Exif::File::setValue(ExifIfd ifd, ExifTag tag, const QVector<ExifRational> urational)
