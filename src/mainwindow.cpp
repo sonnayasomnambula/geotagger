@@ -89,7 +89,6 @@ struct Dropped
     }
 
     void append(const QFileInfo& file) {
-
         if (file.isDir()) {
             QDirIterator i(file.absoluteFilePath(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
             while (i.hasNext())
@@ -115,27 +114,27 @@ MainWindow::MainWindow(QWidget* parent) :
     mSelection(new SelectionWatcher)
 {
     ui->setupUi(this);
-    QQmlEngine* engine = ui->map->engine();
     connect(ui->map, &QQuickWidget::statusChanged, [this](QQuickWidget::Status status){
         if (status == QQuickWidget::Status::Error) {
             QStringList descripton;
             for (const auto& error: ui->map->errors())
                 descripton.append(error.toString());
-            QMessageBox::warning(this, tr("QML load failed"), descripton.join("\n"));
+            warn(tr("QML load failed"), descripton.join("\n"));
         }
     });
     connect(ui->map, &QQuickWidget::sceneGraphError, [this](QQuickWindow::SceneGraphError, const QString& message){
-        QMessageBox::warning(this, "", message);
+        warn(message);
     });
 
 
+    QQmlEngine* engine = ui->map->engine();
     engine->rootContext()->setContextProperty("controller", mModel);
     engine->rootContext()->setContextProperty("selection", mSelection);
     ui->map->setSource(QUrl("qrc:///qml/map.qml"));
 
     ui->photos->setModel(mModel);
-    ui->photos->setItemDelegateForColumn(Model::Section::Time, new TimeDelegate(this));
-    ui->photos->setItemDelegateForColumn(Model::Section::Position, new GeoCoordinateDelegate(this));
+    ui->photos->setItemDelegateForColumn(Model::Column::Time, new TimeDelegate(this));
+    ui->photos->setItemDelegateForColumn(Model::Column::Position, new GeoCoordinateDelegate(this));
 
     QAction * actionRemove = new QAction(tr("Remove"), this);
     actionRemove->setShortcut(QKeySequence::Delete);
@@ -145,7 +144,6 @@ MainWindow::MainWindow(QWidget* parent) :
     ui->photos->addAction(actionRemove);
 
     connect(ui->photos->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onCurrentChanged);
-//    connect(mSelection, &SelectionWatcher::currentChanged, mModel, &Model::photosChanged);
     connect(mSelection, &SelectionWatcher::currentChanged, this, [this](int current){
         ui->photos->setCurrentIndex(mModel->index(current));
     });
@@ -155,15 +153,12 @@ MainWindow::MainWindow(QWidget* parent) :
     connect(mModel, &Model::trackChanged, this, [this]{
         const auto& track = mModel->track();
         if (track.isEmpty()) {
-            QMessageBox::warning(this, "", tr("The track is empty!"));
+            warn(tr("The track is empty!"));
             return;
         }
 
-        QTime start = track.first().timestamp().time();
-        QTime finish = track.last().timestamp().time();
-
-        ui->startTime->setText(start.toString());
-        ui->finishTime->setText(finish.toString());
+        ui->startTime->setText(track.first().timestamp().time().toString());
+        ui->finishTime->setText(track.last().timestamp().time().toString());
     });
 
     connect(mModel, &Model::dataChanged, this, [this]{
@@ -197,16 +192,6 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* e)
     e->acceptProposedAction();
 }
 
-void MainWindow::dragMoveEvent(QDragMoveEvent* e)
-{
-    e->acceptProposedAction();
-}
-
-void MainWindow::dragLeaveEvent(QDragLeaveEvent* e)
-{
-    e->accept();
-}
-
 void MainWindow::dropEvent(QDropEvent* e)
 {
     Dropped dropped(e->mimeData());
@@ -223,8 +208,8 @@ MainWindow::~MainWindow()
 {
     delete ui;
 
-    // QML-used objects needs to live long enough for the QML engine to complete all the calls
-    // so don't pass 'this' to the ctor and delete it later
+    // QML-used objects needs to live long enough for the QML engine to complete all the operations
+    // so don't pass 'this' to the ctor of these objects and delete it after
 
     mModel->deleteLater();
     mSelection->deleteLater();
@@ -286,6 +271,9 @@ void MainWindow::onCurrentChanged(const QModelIndex& index)
     if (!index.isValid())
     {
         ui->picture->setPixmap({});
+        ui->picture->setPath("");
+        ui->pictureDetails->clear();
+        mSelection->setCurrent(-1);
         return;
     }
 
@@ -306,6 +294,11 @@ bool MainWindow::warn(const QString& title, const QString& message)
     qWarning().nospace().noquote() << title << ": " << message;
     QMessageBox::warning(this, title, message);
     return false;
+}
+
+bool MainWindow::warn(const QString& message)
+{
+    return warn("", message);
 }
 
 void MainWindow::on_actionLoadTrack_triggered()
@@ -427,6 +420,6 @@ void MainWindow::on_actionSave_EXIF_triggered()
 
     QMessageBox::information(this, "", tr("Saved succesfully"));
 
-    QString firstFile = mModel->data(mModel->index(0, 0), Model::Role::Path).toString();
+    QString firstFile = mModel->data(mModel->index(0), Model::Role::Path).toString();
     QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(firstFile).absolutePath()));
 }

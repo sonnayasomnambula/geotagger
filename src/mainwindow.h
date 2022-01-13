@@ -34,8 +34,6 @@ private slots:
 private:
     void closeEvent(QCloseEvent* e) override;
     void dragEnterEvent(QDragEnterEvent* e) override;
-    void dragMoveEvent(QDragMoveEvent* e) override;
-    void dragLeaveEvent(QDragLeaveEvent* e) override;
     void dropEvent(QDropEvent* e) override;
 
     void loadSettings();
@@ -47,6 +45,7 @@ private:
     void onCurrentChanged(const QModelIndex& index);
 
     bool warn(const QString& title, const QString& message);
+    bool warn(const QString& message);
 
     Ui::MainWindow* ui = nullptr;
     Model* mModel = nullptr;

@@ -23,7 +23,7 @@ signals:
     void currentChanged(int);
 
 public:
-    using QObject::QObject;
+    SelectionWatcher() {} // QML-used objects must be destoyed after QML engine so don't pass parent here
     void setCurrent(int current);
 
 private:

@@ -88,7 +88,7 @@ bool jpeg::Loader::load(const QStringList& fileNames)
                     item.altitude = Exif::Utils::fromSingleRational(alt, altRef);
                 }
 
-                item.flags |= Photo::Exif::HaveGpsCoord;
+                item.flags.haveGPSCoord = true;
 
                 stat.add(item.lat(), item.lon());
             }
@@ -100,8 +100,6 @@ bool jpeg::Loader::load(const QStringList& fileNames)
                 timeString = exif.ascii(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL);
             // we can also check EXIF_TAG_DATE_TIME in EXIF_IFD_0,
             // however this one may be the file editing / raw export time
-            if (timeString.isEmpty())
-                timeString = exif.ascii(EXIF_IFD_0, EXIF_TAG_DATE_TIME);
             QString pattern = "yyyy:MM:dd hh:mm:ss";
             if (timeString.size() == pattern.size())
             {
@@ -109,7 +107,7 @@ bool jpeg::Loader::load(const QStringList& fileNames)
                 if (time.isValid())
                 {
                     item.time = time;
-                    item.flags |= Photo::Exif::HaveShotTime;
+                    item.flags.haveShotTime = true;
                 }
             }
         }
@@ -142,7 +140,7 @@ bool jpeg::Saver::save(const QList<Photo>& items, qint64 addsecs)
     {
         emit progress(i++, items.size());
 
-        if (item.coordGuessed())
+        if (item.flags.coordGuessed)
         {
             Exif::File exif;
             if (!exif.load(item.path)) {
@@ -176,8 +174,7 @@ bool jpeg::Saver::save(const QList<Photo>& items, qint64 addsecs)
 }
 
 
-Model::Model(QObject *parent)
-    : QAbstractListModel(parent)
+Model::Model()
 {
     connect(this, &Model::dataChanged, this, &Model::guessPhotoCoordinates);
     connect(this, &Model::trackChanged, this, &Model::guessPhotoCoordinates);
@@ -254,11 +251,11 @@ QVariant Model::headerData(int section, Qt::Orientation orientation, int role) c
     {
         switch (section)
         {
-        case Section::Name:
+        case Column::Name:
             return tr("Name");
-        case Section::Time:
+        case Column::Time:
             return tr("Time");
-        case Section::Position:
+        case Column::Position:
             return tr("Position");
         }
     }
@@ -281,7 +278,7 @@ int Model::columnCount(const QModelIndex & parent) const
     if (parent.isValid())
         return 0;
 
-    return Section::Count;
+    return Column::Count;
 }
 
 QVariant Model::data(const QModelIndex &index, int role) const
@@ -295,10 +292,10 @@ QVariant Model::data(const QModelIndex &index, int role) const
     {
         switch (index.column())
         {
-        case Section::Name:      return item.name;
-        case Section::Time:      return item.haveGPSCoord() ? item.time : item.time.addSecs(mTimeAdjust);
-        case Section::Position:  return item.position;
-        default:                     return {};
+        case Column::Name:      return item.name;
+        case Column::Time:      return item.flags.haveGPSCoord ? item.time : item.time.addSecs(mTimeAdjust);
+        case Column::Position:  return item.position;
+        default:                return {};
         }
     }
 
@@ -311,10 +308,10 @@ QVariant Model::data(const QModelIndex &index, int role) const
         // TODO use palette?
         switch (index.column())
         {
-        case Section::Time:
-            return QColor(item.haveShotTime() ? Qt::black : Qt::gray);
-        case Section::Position:
-            return QColor(item.haveGPSCoord() ? Qt::black : Qt::gray);
+        case Column::Time:
+            return QColor(item.flags.haveShotTime ? Qt::black : Qt::gray);
+        case Column::Position:
+            return QColor(item.flags.haveGPSCoord ? Qt::black : Qt::gray);
         default:
             return QColor(Qt::black);
         }
@@ -351,17 +348,16 @@ void Model::guessPhotoCoordinates()
     beginResetModel();
     for (auto& item: mPhotos)
     {
-        if (item.time.isNull())
-            continue;
-        if (item.haveGPSCoord())
+        if (item.time.isNull() || item.flags.haveGPSCoord)
             continue;
 
         auto i = std::find_if(mTrack.begin(), mTrack.end(), [time = item.time.addSecs(mTimeAdjust)](const QGeoPositionInfo& info) {
             return info.timestamp() > time; });
         if (i == mTrack.begin() || i == mTrack.end()) {
             qWarning() << item.name << item.time.addSecs(mTimeAdjust) << "is beyond track time";
-            item.position = {}; // clear position if guessed earlier
-            item.flags &= ~jpeg::Photo::Exif::CoordGuessed;
+            // clear position if guessed earlier
+            item.position = {};
+            item.flags.coordGuessed = false;
             continue;
         }
         const QGeoPositionInfo& after = *i;
@@ -371,34 +367,22 @@ void Model::guessPhotoCoordinates()
 //                              item.time.time().toString() <<
 //                              after.timestamp().time().toString();
         item.setPosition(GPX::interpolated(before, after, item.time.addSecs(mTimeAdjust)));
-        item.flags |= jpeg::Photo::Exif::CoordGuessed;
+        item.flags.coordGuessed = true;
     }
     endResetModel();
 }
 
-const jpeg::Photo& Model::item(int row) const
-{
-    static jpeg::Photo empty;
-    return (row < 0 || row >= mPhotos.size()) ? empty : mPhotos[row];
-}
-
 QString Model::tooltip(const jpeg::Photo& item)
 {
-    QStringList strings;
-
-    strings.append(item.path);
-
-    if (item.haveShotTime())
-        strings.append(tr("EXIF have shot time"));
-    else
-        strings.append(tr("EXIF have no shot time"));
-
-    if (item.haveGPSCoord())
-        strings.append(tr("EXIF have GPS tag"));
-    else
-        strings.append(tr("EXIF have no GPS tag"));
-
-    return strings.join("\n");
+    return QStringList({
+        item.path,
+        item.flags.haveShotTime ?
+            tr("EXIF have shot time") :
+            tr("EXIF have no shot time"),
+        item.flags.haveGPSCoord ?
+            tr("EXIF have GPS tag") :
+            tr("EXIF have no GPS tag")
+    }).join("\n");
 }
 
 QHash<int, QByteArray> Model::roleNames() const

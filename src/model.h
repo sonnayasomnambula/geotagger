@@ -25,25 +25,18 @@ struct Photo
     QPointF position;
     double altitude = 0.;
     QString pixmap; // base64 thumbnail
-    int flags = 0;
+    struct Flags
+    {
+        Flags() { memset(this, 0, sizeof(Flags)); }
 
-    bool haveShotTime() const { return flags & Exif::HaveShotTime; }
-    bool haveGPSCoord() const { return flags & Exif::HaveGpsCoord; }
-    bool coordGuessed() const { return flags & Exif::CoordGuessed; }
+        uint8_t haveShotTime : 1; // have EXIF digitized / original timestamp in the file
+        uint8_t haveGPSCoord : 1; // have EXIF GPS position tags in the file
+        uint8_t coordGuessed : 1; // position guessed from time and track
+    } flags;
 
     double lat() const { return position.x(); }
     double lon() const { return position.y(); }
     void setPosition(const QGeoCoordinate& coord);
-
-    struct Exif
-    {
-        enum
-        {
-            HaveShotTime    = 0x01,
-            HaveGpsCoord    = 0x02,
-            CoordGuessed    = 0x04,
-        };
-    };
 };
 
 
@@ -92,9 +85,9 @@ signals:
 
 public:
     struct Role { enum { Index = Qt::UserRole, Path, Name, Latitude, Longitude, Altitude, Pixmap }; };
-    struct Section { enum { Name, Time, Position, Count }; };
+    struct Column { enum { Name, Time, Position, Count }; };
 
-    explicit Model(QObject* parent = nullptr);
+    explicit Model(); // QML-used objects must be destoyed after QML engine so don't pass parent here
 
     void setTrack(const GPX::Track& track);
     void setCenter(const QGeoCoordinate& center);
@@ -115,15 +108,12 @@ public:
 
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    const jpeg::Photo& item(int row) const;
+    QHash<int, QByteArray> roleNames() const override;
 
     void guessPhotoCoordinates();
 
-protected:
-    QHash<int, QByteArray> roleNames() const override;
 
 private:
-
     static QString tooltip(const jpeg::Photo& item);
 
     QList<jpeg::Photo> mPhotos;
