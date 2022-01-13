@@ -4,6 +4,7 @@ INCLUDEPATH += $$PWD/include
 DEPENDPATH += $$PWD/include
 
 unix:!macx: PRE_TARGETDEPS += $$PWD/lib/libexif.a
+win32: LIBS += -L$$PWD/lib/ -llibexif
 
 HEADERS += \
     $$PWD/include/libexif/_stdint.h \

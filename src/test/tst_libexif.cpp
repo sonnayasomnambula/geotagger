@@ -13,7 +13,7 @@
 TEST(libexif, save_load)
 {
     QString jpeg = TmpJpegFile::withoutExif();
-    ASSERT_FALSE(jpeg.isEmpty());
+    ASSERT_FALSE(jpeg.isEmpty()) << TmpJpegFile::lastError();
 
     double lat = 58.7203335774538746;
 
@@ -57,7 +57,7 @@ TEST(libexif, save_load)
 TEST(libexif, replace)
 {
     QString jpeg = TmpJpegFile::withGps();
-    ASSERT_FALSE(jpeg.isEmpty());
+    ASSERT_FALSE(jpeg.isEmpty()) << TmpJpegFile::lastError();
 
     const ExifIfd ifd = EXIF_IFD_0;
     const ExifTag tag = EXIF_TAG_DATE_TIME;

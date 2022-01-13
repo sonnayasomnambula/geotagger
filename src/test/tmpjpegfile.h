@@ -13,6 +13,7 @@ public:
     static QString withGps();
     static QString withoutGps();
     static QString withoutExif();
+    static const char* lastError();
 };
 
 #endif // TMPJPEGFILE_H

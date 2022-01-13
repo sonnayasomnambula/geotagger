@@ -9,8 +9,7 @@ QString TmpJpegFile::mLastError;
 
 QString TmpJpegFile::emptyFile(const QString &message, const QString &fileName)
 {
-    mLastError = message + "'" + fileName + "'";
-    qWarning() << qPrintable(mLastError);
+    mLastError = message + " '" + fileName + "'";
     return "";
 }
 
@@ -28,10 +27,9 @@ QString TmpJpegFile::instance(const QString& name)
     if (!original.copy(path))
         return emptyFile("Unable to copy", path);
 
-#ifdef Q_OS_LINUX
-    if (!copy.setPermissions(QFile::ReadUser | QFile::WriteUser))
+    if (!(copy.permissions() & QFile::WriteUser) && !copy.setPermissions(QFile::ReadUser | QFile::WriteUser))
         return emptyFile("Unable to set permissions", path);
-#endif
+
     return path;
 }
 
@@ -48,4 +46,9 @@ QString TmpJpegFile::withoutGps()
 QString TmpJpegFile::withoutExif()
 {
     return instance(":/img/without_exif.jpg");
+}
+
+const char* TmpJpegFile::lastError()
+{
+    return qPrintable(mLastError);
 }

@@ -15,11 +15,9 @@ _$*
 *.orig
 *.rej
 .del-*
-*.a
 *.olb
 *.o
 *.obj
-*.so
 *.exe
 *.Z
 *.elc
