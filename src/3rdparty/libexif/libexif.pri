@@ -1,10 +1,9 @@
-unix:!macx: LIBS += -L$$PWD/lib/ -lexif
-
 INCLUDEPATH += $$PWD/include
 DEPENDPATH += $$PWD/include
 
-unix:!macx: PRE_TARGETDEPS += $$PWD/lib/libexif.a
-win32: LIBS += -L$$PWD/lib/ -llibexif
+unix:!macx: PRE_TARGETDEPS += $$PWD/lib/linux/libexif.a
+unix:!macx: LIBS += -L$$PWD/lib/linux/ -lexif
+win32: LIBS += -L$$PWD/lib/win -llibexif
 
 HEADERS += \
     $$PWD/include/libexif/_stdint.h \

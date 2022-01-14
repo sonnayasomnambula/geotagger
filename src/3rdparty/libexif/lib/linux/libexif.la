@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/home/serge/coding/projects/trash/strava-uploader/src/3rdparty/libexif/build/lib'
+libdir='/home/serge/coding/libs/libexif-master/bin/lib'
