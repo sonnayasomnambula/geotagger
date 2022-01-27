@@ -2,10 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QString>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
-class QString;
 class QStringList;
 class QMimeData;
 QT_END_NAMESPACE
@@ -40,7 +40,8 @@ private:
     void saveSettings();
 
     bool loadGPX(const QString& fileName);
-    bool addPhotos(const QStringList & fileNames);
+    bool addPhotos(const QStringList& fileNames);
+    void setTitle(const QString& title = {});
 
     void onCurrentChanged(const QModelIndex& index);
 

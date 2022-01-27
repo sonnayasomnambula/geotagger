@@ -35,15 +35,14 @@ struct Settings : AbstractSettings
         Geometry geometry = "window/geometry";
         struct { State state = "window/splitter.state"; } splitter;
         struct { State state = "window/header.state"; } header;
-        Tag<bool> adjustTimestamp = "window/adjustTimestamp";
+        struct {
+            Tag<int> d = "window/adjustTimestamp.d";
+            Tag<int> h = "window/adjustTimestamp.h";
+            Tag<int> m = "window/adjustTimestamp.m";
+            Tag<int> s = "window/adjustTimestamp.s";
+            Tag<bool> visible = "window/adjustTimestamp.visible";
+        } adjustTimestamp;
     } window;
-
-    struct {
-        Tag<int> d = "adjustTimestamp/d";
-        Tag<int> h = "adjustTimestamp/h";
-        Tag<int> m = "adjustTimestamp/m";
-        Tag<int> s = "adjustTimestamp/s";
-    } adjustTimestamp;
 
     struct {
         Tag<QString> gpx = "session/gpx";
@@ -175,6 +174,7 @@ MainWindow::MainWindow(QWidget* parent) :
     // playing with size policy and stretch factor didn't work
     ui->splitter->setSizes({860, 345});
 
+    setTitle();
     loadSettings();
 }
 
@@ -233,12 +233,12 @@ void MainWindow::loadSettings()
     settings.window.geometry.restore(this);
     settings.window.splitter.state.restore(ui->splitter);
     settings.window.header.state.restore(ui->photos->header());
-    ui->actionAdjust_photo_timestamp->setChecked(settings.window.adjustTimestamp);
+    ui->actionAdjust_photo_timestamp->setChecked(settings.window.adjustTimestamp.visible);
 
-    ui->timeAdjistWidget->setDays(settings.adjustTimestamp.d);
-    ui->timeAdjistWidget->setHours(settings.adjustTimestamp.h);
-    ui->timeAdjistWidget->setMinutes(settings.adjustTimestamp.m);
-    ui->timeAdjistWidget->setSeconds(settings.adjustTimestamp.s);
+    ui->timeAdjistWidget->setDays(settings.window.adjustTimestamp.d);
+    ui->timeAdjistWidget->setHours(settings.window.adjustTimestamp.h);
+    ui->timeAdjistWidget->setMinutes(settings.window.adjustTimestamp.m);
+    ui->timeAdjistWidget->setSeconds(settings.window.adjustTimestamp.s);
 
     ui->actionRestore_session_on_startup->setChecked(settings.session.restore);
 }
@@ -251,12 +251,12 @@ void MainWindow::saveSettings()
     settings.window.geometry.save(this);
     settings.window.splitter.state.save(ui->splitter);
     settings.window.header.state.save(ui->photos->header());
-    settings.window.adjustTimestamp = ui->actionAdjust_photo_timestamp->isChecked();
+    settings.window.adjustTimestamp.visible = ui->actionAdjust_photo_timestamp->isChecked();
 
-    settings.adjustTimestamp.d = ui->timeAdjistWidget->days();
-    settings.adjustTimestamp.h = ui->timeAdjistWidget->hours();
-    settings.adjustTimestamp.m = ui->timeAdjistWidget->minutes();
-    settings.adjustTimestamp.s = ui->timeAdjistWidget->seconds();
+    settings.window.adjustTimestamp.d = ui->timeAdjistWidget->days();
+    settings.window.adjustTimestamp.h = ui->timeAdjistWidget->hours();
+    settings.window.adjustTimestamp.m = ui->timeAdjistWidget->minutes();
+    settings.window.adjustTimestamp.s = ui->timeAdjistWidget->seconds();
 
     QStringList photos;
     for (int row = 0; row < mModel->rowCount(); ++row)
@@ -326,7 +326,7 @@ bool MainWindow::loadGPX(const QString& fileName)
     if (!loader.load(fileName))
         return warn(tr("Unable to load GPX file"), loader.lastError());
 
-    setWindowTitle(loader.name().isEmpty() ? tr("Strava uploader 0.1") : loader.name()); // TODO extract version
+    setTitle(loader.name());
 
     mModel->setTrack(loader.track());
     mModel->setCenter(loader.center());
@@ -390,6 +390,11 @@ bool MainWindow::addPhotos(const QStringList& fileNames)
     }
 
     return true;
+}
+
+void MainWindow::setTitle(const QString& title)
+{
+    setWindowTitle(title.isEmpty() ? tr("geotagger %1").arg(qApp->applicationVersion()) : title);
 }
 
 void MainWindow::on_actionAdjust_photo_timestamp_toggled(bool toggled)

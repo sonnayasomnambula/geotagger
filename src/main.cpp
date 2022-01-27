@@ -17,7 +17,8 @@ int main(int argc, char *argv[])
 #endif
 
     a.setOrganizationName("sonnayasomnambula");
-    a.setOrganizationDomain("sonnayasomnambula.org");
+    a.setOrganizationDomain("sonnayasomnambula.github.io");
+    a.setApplicationName("geotagger");
     a.setApplicationVersion("0.1");
 
     MainWindow w;
