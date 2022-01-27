@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TimeAdjustWidget</class>
+ <widget class="QWidget" name="TimeAdjustWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>277</width>
+    <height>44</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Adjust time</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QSpinBox" name="d">
+     <property name="toolTip">
+      <string>Days</string>
+     </property>
+     <property name="minimum">
+      <number>-99</number>
+     </property>
+     <property name="maximum">
+      <number>99</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QSpinBox" name="h">
+     <property name="toolTip">
+      <string>Hours</string>
+     </property>
+     <property name="minimum">
+      <number>-24</number>
+     </property>
+     <property name="maximum">
+      <number>24</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QSpinBox" name="m">
+     <property name="toolTip">
+      <string>Minutes</string>
+     </property>
+     <property name="minimum">
+      <number>-59</number>
+     </property>
+     <property name="maximum">
+      <number>59</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QSpinBox" name="s">
+     <property name="toolTip">
+      <string>Seconds</string>
+     </property>
+     <property name="minimum">
+      <number>-59</number>
+     </property>
+     <property name="maximum">
+      <number>59</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="clear">
+     <property name="text">
+      <string>x</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
