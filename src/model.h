@@ -80,12 +80,14 @@ class Model : public QAbstractListModel
     Q_PROPERTY(QGeoCoordinate center MEMBER mCenter WRITE setCenter NOTIFY centerChanged)
     Q_PROPERTY(qreal zoom MEMBER mZoom WRITE setZoom NOTIFY zoomChanged)
 
+
 signals:
-    void trackChanged();
+    void trackChanged(int reason);
     void centerChanged();
     void zoomChanged();
 
 public:
+    struct Reason { enum { Set, Clear }; };
     struct Role { enum { Index = Qt::UserRole, Path, Name, Latitude, Longitude, Altitude, Pixmap }; };
     struct Column { enum { Name, Time, Position, Count }; };
 
@@ -97,6 +99,8 @@ public:
 
     void add(const QList<jpeg::Photo> photos);
     void remove(const QModelIndexList& indexes);
+
+    void clear();
 
     void setTimeAdjust(qint64 timeAdjust) { mTimeAdjust = timeAdjust; }
     qint64 timeAdjust() const { return mTimeAdjust; }

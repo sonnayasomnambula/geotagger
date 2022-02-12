@@ -189,7 +189,7 @@ void Model::setTrack(const GPX::Track& track)
     for (const auto& point: mTrack)
         mPath.addCoordinate(point.coordinate());
 
-    emit trackChanged();
+    emit trackChanged(Reason::Set);
 }
 
 void Model::add(const QList<jpeg::Photo> photos)
@@ -241,6 +241,17 @@ void Model::remove(const QModelIndexList& indexes)
             endRemoveRows();
         }
     }
+}
+
+void Model::clear()
+{
+    mTrack.clear();
+    mPath.clearPath();
+    emit trackChanged(Reason::Clear);
+
+    beginResetModel();
+    mPhotos.clear();
+    endResetModel();
 }
 
 QVariant Model::headerData(int section, Qt::Orientation orientation, int role) const

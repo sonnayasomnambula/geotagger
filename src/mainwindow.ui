@@ -173,6 +173,7 @@
     </property>
     <addaction name="actionLoadTrack"/>
     <addaction name="actionAddPhotos"/>
+    <addaction name="action_Clear"/>
     <addaction name="separator"/>
     <addaction name="actionSave_EXIF"/>
     <addaction name="separator"/>
@@ -230,6 +231,11 @@
   <action name="actionSave_EXIF">
    <property name="text">
     <string>Save EXIF</string>
+   </property>
+  </action>
+  <action name="action_Clear">
+   <property name="text">
+    <string>&amp;Clear</string>
    </property>
   </action>
  </widget>

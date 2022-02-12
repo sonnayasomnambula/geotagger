@@ -5,7 +5,7 @@
 
 QPixmap PixmapLabel::scaledPixmap() const
 {
-    return mPixmap.scaled(size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    return mPixmap.isNull() ? mPixmap : mPixmap.scaled(size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 
 PixmapLabel::PixmapLabel(QWidget* parent) :

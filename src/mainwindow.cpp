@@ -151,10 +151,14 @@ MainWindow::MainWindow(QWidget* parent) :
 
     ui->progressBar->hide();
 
-    connect(mModel, &Model::trackChanged, this, [this]{
+    connect(mModel, &Model::trackChanged, this, [this](int reason){
         const auto& track = mModel->track();
         if (track.isEmpty()) {
-            warn(tr("The track is empty!"));
+            ui->startTime->clear();
+            ui->finishTime->clear();
+            if (reason != Model::Reason::Clear) {
+                warn(tr("The track is empty!"));
+            }
             return;
         }
 
@@ -358,6 +362,12 @@ void MainWindow::on_actionAddPhotos_triggered()
 
     std::sort(names.begin(), names.end());
     addPhotos(names);
+}
+
+void MainWindow::on_action_Clear_triggered()
+{
+    mModel->clear();
+    onCurrentChanged({});
 }
 
 template <class ProgressSignaller>

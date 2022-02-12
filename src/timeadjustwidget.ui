@@ -19,6 +19,9 @@
      <property name="toolTip">
       <string>Days</string>
      </property>
+     <property name="suffix">
+      <string> d</string>
+     </property>
      <property name="minimum">
       <number>-99</number>
      </property>
@@ -31,6 +34,9 @@
     <widget class="QSpinBox" name="h">
      <property name="toolTip">
       <string>Hours</string>
+     </property>
+     <property name="suffix">
+      <string> h</string>
      </property>
      <property name="minimum">
       <number>-24</number>
@@ -45,6 +51,9 @@
      <property name="toolTip">
       <string>Minutes</string>
      </property>
+     <property name="suffix">
+      <string> m</string>
+     </property>
      <property name="minimum">
       <number>-59</number>
      </property>
@@ -57,6 +66,9 @@
     <widget class="QSpinBox" name="s">
      <property name="toolTip">
       <string>Seconds</string>
+     </property>
+     <property name="suffix">
+      <string> s</string>
      </property>
      <property name="minimum">
       <number>-59</number>
