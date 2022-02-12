@@ -17,6 +17,7 @@ INCLUDEPATH += \
 SOURCES += \
     src/exif.cpp \
     src/gpx/loader.cpp \
+    src/gpx/statistic.cpp \
     src/test/tmpjpegfile.cpp \
     src/test/tst_libexif.cpp \
     src/test/tst_libexif_trivial.cpp
@@ -24,6 +25,7 @@ SOURCES += \
 HEADERS += \
     src/exif.h \
     src/gpx/loader.h \
+    src/gpx/statistic.h \
     src/gpx/track.h \
     src/test/tmpjpegfile.h
 
