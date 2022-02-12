@@ -4,29 +4,10 @@
 #include <QCoreApplication>
 #include <QPointF>
 
+#include "statistic.h"
 #include "track.h"
 
 class QGeoPath;
-
-class Statistic
-{
-public:
-    void add(double lat, double lon) {
-        mSum += QPointF(lat, lon);
-        mTotal++;
-    }
-
-    QGeoCoordinate center() const {
-        return QGeoCoordinate(mSum.x() / mTotal, mSum.y() / mTotal);
-    }
-
-    int total() const { return mTotal; }
-
-private:
-    QPointF mSum;
-    QGeoCoordinate mLatMax, mLatMin, mLonMax, mLonMin;
-    int mTotal = 0;
-};
 
 namespace GPX
 {
@@ -43,7 +24,7 @@ public:
 
     Track track() const { return mTrack; }
     QString name() const { return mName; }
-    QGeoCoordinate center() const { return mCenter; }
+    const Statistic& statistic() const { return mStatistic; }
 
 private:
     bool warn(const QString& text);
@@ -54,7 +35,8 @@ private:
 
     Track mTrack;
     QString mName;
-    QGeoCoordinate mCenter;
+    Statistic mStatistic;
+
     QString mLastError;
 };
 

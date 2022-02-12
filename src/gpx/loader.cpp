@@ -83,7 +83,7 @@ bool GPX::Loader::load(const QString& url)
 
     mTrack.clear();
     mName.clear();
-    Statistic stat;
+    mStatistic.clear();
 
     QXmlStreamReader xml(data);
 
@@ -131,7 +131,7 @@ bool GPX::Loader::load(const QString& url)
 
                                     QGeoPositionInfo point(coord, timestamp);
                                     segment.append(point);
-                                    stat.add(coord.latitude(), coord.longitude());
+                                    mStatistic.add(coord.latitude(), coord.longitude());
                                 }
                             }
 
@@ -143,13 +143,11 @@ bool GPX::Loader::load(const QString& url)
         }
     }
 
-    qDebug() << mscModuleName << stat.total() << "point(s) loaded";
+    qInfo() << mscModuleName << mStatistic.total() << "point(s) loaded";
     if (!mTrack.isEmpty() && !mTrack.first().isEmpty() && !mTrack.last().isEmpty()) {
-        qDebug() << mscModuleName << "start:" << mTrack.first().first().timestamp();
-        qDebug() << mscModuleName << "end:  " << mTrack.last().last().timestamp();
+        qInfo() << mscModuleName << "start:" << mTrack.first().first().timestamp();
+        qInfo() << mscModuleName << "end:  " << mTrack.last().last().timestamp();
     }
-
-    mCenter = stat.center();
 
     return true;
 }

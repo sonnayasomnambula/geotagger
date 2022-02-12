@@ -8,6 +8,7 @@ include(src/3rdparty/libjpeg/libjpeg.pri)
 SOURCES += \
     src/exif.cpp \
     src/gpx/loader.cpp \
+    src/gpx/statistic.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/model.cpp \
@@ -19,6 +20,7 @@ HEADERS += \
     src/abstractsettings.h \
     src/exif.h \
     src/gpx/loader.h \
+    src/gpx/statistic.h \
     src/gpx/track.h \
     src/mainwindow.h \
     src/model.h \

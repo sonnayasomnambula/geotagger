@@ -16,6 +16,8 @@
 #include <QStyledItemDelegate>
 #include <QTime>
 
+#include <cmath>
+
 #include "gpx/loader.h"
 
 #include "abstractsettings.h"
@@ -329,8 +331,11 @@ bool MainWindow::loadGPX(const QString& fileName)
     setTitle(loader.name());
 
     mModel->setTrack(loader.track());
-    mModel->setCenter(loader.center());
-    mModel->setZoom(9); // TODO
+    if (loader.statistic().total())
+    {
+        mModel->setCenter(loader.statistic().center());
+        mModel->setZoom(loader.statistic().zoom(ui->map->size()));
+    }
 
     Settings().session.gpx = fileName;
 
@@ -385,8 +390,11 @@ bool MainWindow::addPhotos(const QStringList& fileNames)
     if (!loader.loaded.isEmpty())
     {
         mModel->add(loader.loaded);
-        mModel->setCenter(loader.center);
-        mModel->setZoom(9); // TODO
+        if (loader.statistic.total())
+        {
+            mModel->setCenter(loader.statistic.center());
+            mModel->setZoom(loader.statistic.zoom(ui->map->size()));
+        }
     }
 
     return true;

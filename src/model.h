@@ -13,6 +13,7 @@
 #include <QString>
 
 #include "gpx/track.h"
+#include "gpx/statistic.h"
 
 namespace jpeg
 {
@@ -54,8 +55,9 @@ public:
 struct Loader : FileProcessor
 {
     bool load(const QStringList& fileNames);
-    QGeoCoordinate center;
+
     QList<Photo> loaded;
+    Statistic statistic;
 };
 
 struct Saver : FileProcessor
@@ -91,7 +93,7 @@ public:
 
     void setTrack(const GPX::Track& track);
     void setCenter(const QGeoCoordinate& center);
-    void setZoom(int zoom);
+    void setZoom(qreal zoom);
 
     void add(const QList<jpeg::Photo> photos);
     void remove(const QModelIndexList& indexes);

@@ -46,11 +46,11 @@ bool jpeg::Loader::load(const QStringList& fileNames)
     if (fileNames.isEmpty()) return true;
 
     errors.clear();
-    Statistic stat;
+    statistic.clear();
 
     for (QFileInfo file: fileNames)
     {
-        emit progress(stat.total(), fileNames.size());
+        emit progress(statistic.total(), fileNames.size());
 
         if (!file.exists())
         {
@@ -90,7 +90,7 @@ bool jpeg::Loader::load(const QStringList& fileNames)
 
                 item.flags.haveGPSCoord = true;
 
-                stat.add(item.lat(), item.lon());
+                statistic.add(item.lat(), item.lon());
             }
         }
 
@@ -124,8 +124,6 @@ bool jpeg::Loader::load(const QStringList& fileNames)
 
         loaded.append(item);
     }
-
-    center = stat.center();
 
     return true;
 }
@@ -221,9 +219,9 @@ void Model::setCenter(const QGeoCoordinate& center)
     }
 }
 
-void Model::setZoom(int zoom)
+void Model::setZoom(qreal zoom)
 {
-    if (zoom != mZoom) {
+    if (!qFuzzyCompare(zoom, mZoom)) {
         mZoom = zoom;
         emit zoomChanged();
     }
