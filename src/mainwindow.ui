@@ -186,6 +186,7 @@
      <string>&amp;View</string>
     </property>
     <addaction name="actionAdjust_photo_timestamp"/>
+    <addaction name="actionFollow_selection"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
@@ -236,6 +237,14 @@
   <action name="action_Clear">
    <property name="text">
     <string>&amp;Clear</string>
+   </property>
+  </action>
+  <action name="actionFollow_selection">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Follow selection</string>
    </property>
   </action>
  </widget>

@@ -51,6 +51,8 @@ struct Settings : AbstractSettings
         Tag<QStringList> photos = "session/photos";
         Tag<bool> restore = "session/restore";
     } session;
+
+    Tag<bool> followSelection = "followSelection";
 };
 
 class TimeDelegate : public QStyledItemDelegate
@@ -247,6 +249,7 @@ void MainWindow::loadSettings()
     ui->timeAdjistWidget->setSeconds(settings.window.adjustTimestamp.s);
 
     ui->actionRestore_session_on_startup->setChecked(settings.session.restore);
+    ui->actionFollow_selection->setChecked(settings.followSelection);
 }
 
 void MainWindow::saveSettings()
@@ -270,6 +273,7 @@ void MainWindow::saveSettings()
     settings.session.photos = photos;
 
     settings.session.restore = ui->actionRestore_session_on_startup->isChecked();
+    settings.followSelection = ui->actionFollow_selection->isChecked();
 }
 
 void MainWindow::onCurrentChanged(const QModelIndex& index)
@@ -293,6 +297,14 @@ void MainWindow::onCurrentChanged(const QModelIndex& index)
                                 .arg(pix.height())
                                 .arg(QLocale().formattedDataSize(QFileInfo(fileName).size())));
     mSelection->setCurrent(index.row());
+
+    if (ui->actionFollow_selection->isChecked())
+    {
+        double lat = mModel->data(index, Model::Role::Latitude).toDouble();
+        double lon = mModel->data(index, Model::Role::Longitude).toDouble();
+        if (!qFuzzyIsNull(lat) && !qFuzzyIsNull(lon))
+            mModel->setCenter({ lat, lon });
+    }
 }
 
 bool MainWindow::warn(const QString& title, const QString& message)
