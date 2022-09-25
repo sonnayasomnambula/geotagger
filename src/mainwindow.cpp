@@ -389,6 +389,10 @@ void MainWindow::on_action_Clear_triggered()
 {
     mModel->clear();
     onCurrentChanged({});
+
+    Settings settings;
+    settings.session.gpx = {};
+    settings.session.photos = {};
 }
 
 template <class ProgressSignaller>
