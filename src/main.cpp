@@ -22,7 +22,6 @@ int main(int argc, char *argv[])
     a.setApplicationVersion("0.1");
 
     MainWindow w;
-    w.restoreSession();
     w.show();
 
     return a.exec();

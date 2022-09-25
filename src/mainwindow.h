@@ -22,8 +22,6 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-    void restoreSession();
-
 private slots:
     void on_actionLoadTrack_triggered();
     void on_actionAddPhotos_triggered();
@@ -36,12 +34,14 @@ private:
     void closeEvent(QCloseEvent* e) override;
     void dragEnterEvent(QDragEnterEvent* e) override;
     void dropEvent(QDropEvent* e) override;
+    void showEvent(QShowEvent* e) override;
 
     void loadSettings();
     void saveSettings();
 
     bool loadGPX(const QString& fileName);
     bool addPhotos(const QStringList& fileNames);
+    void restoreSession();
     void setTitle(const QString& title = {});
 
     void onCurrentChanged(const QModelIndex& index);

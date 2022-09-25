@@ -37,6 +37,7 @@ void Statistic::clear()
     mLonMin =  360;
 }
 
+/// total number of points added
 int Statistic::total() const
 {
     return mTotal;

@@ -212,6 +212,16 @@ void MainWindow::dropEvent(QDropEvent* e)
         addPhotos(dropped.photos);
 }
 
+void MainWindow::showEvent(QShowEvent* e)
+{
+    if (e->spontaneous()) return;
+
+    static bool initiated = false;
+    if (!initiated && ui->actionRestore_session_on_startup->isChecked())
+        restoreSession(); // To set the map zoom correctly, we need to know the size here
+    initiated = true;
+}
+
 MainWindow::~MainWindow()
 {
     delete ui;
@@ -354,7 +364,6 @@ bool MainWindow::loadGPX(const QString& fileName)
     }
 
     Settings().session.gpx = fileName;
-
     return true;
 }
 
@@ -419,6 +428,7 @@ bool MainWindow::addPhotos(const QStringList& fileNames)
         }
     }
 
+    Settings().session.photos = fileNames;
     return true;
 }
 
