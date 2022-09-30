@@ -17,6 +17,14 @@ Rectangle {
             line.color: 'red'
         }
 
+        CoordinateAnimation {
+            id: centerAnimation;
+            target: map;
+            properties: "center";
+            duration: 300
+            easing.type: Easing.InOutQuad
+        }
+
         Connections {
             target: controller
             function onTrackChanged() {
@@ -26,8 +34,14 @@ Rectangle {
                 }
                 track.path = lines;
             }
-            function onCenterChanged() { map.center = controller.center }
-            function onZoomChanged() { map.zoomLevel = controller.zoom }
+            function onCenterChanged() {
+                centerAnimation.from = map.center
+                centerAnimation.to = controller.center
+                centerAnimation.start()
+            }
+            function onZoomChanged() {
+                map.zoomLevel = controller.zoom
+            }
         }
 
         MapItemView {
