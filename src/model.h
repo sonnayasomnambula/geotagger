@@ -83,7 +83,6 @@ class Model : public QAbstractListModel
 
 signals:
     void trackChanged(int reason);
-    void photosAdded();
     void centerChanged();
     void zoomChanged();
 

@@ -174,7 +174,7 @@ bool jpeg::Saver::save(const QList<Photo>& items, qint64 addsecs)
 
 Model::Model()
 {
-    connect(this, &Model::photosAdded, this, &Model::guessPhotoCoordinates);
+    connect(this, &Model::rowsInserted, this, &Model::guessPhotoCoordinates);
     connect(this, &Model::dataChanged, this, &Model::guessPhotoCoordinates);
     connect(this, &Model::trackChanged, this, &Model::guessPhotoCoordinates);
 }
@@ -210,8 +210,6 @@ void Model::add(const QList<jpeg::Photo> photos)
             endInsertRows();
         }
     }
-
-    emit photosAdded();
 }
 
 void Model::setCenter(const QGeoCoordinate& center)

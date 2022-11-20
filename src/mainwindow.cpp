@@ -168,7 +168,7 @@ MainWindow::MainWindow(QWidget* parent) :
         ui->finishTime->setText(track.last().timestamp().time().toString());
     });
 
-    connect(mModel, &Model::dataChanged, this, [this]{
+    connect(mModel, &Model::rowsInserted, this, [this]{
         ui->actionSave_EXIF->setEnabled(mModel->rowCount() > 0);
     });
     ui->actionSave_EXIF->setEnabled(mModel->rowCount() > 0);
