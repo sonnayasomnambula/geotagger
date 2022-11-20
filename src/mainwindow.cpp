@@ -393,6 +393,8 @@ void MainWindow::on_action_Clear_triggered()
     Settings settings;
     settings.session.gpx = {};
     settings.session.photos = {};
+
+    setTitle();
 }
 
 template <class ProgressSignaller>
