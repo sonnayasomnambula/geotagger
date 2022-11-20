@@ -150,7 +150,6 @@ void Exif::File::setValue(ExifIfd ifd, ExifTag tag, const QVector<ExifRational> 
 
     if (entry)
     {
-        Q_ASSERT(entry->format == EXIF_FORMAT_RATIONAL); // TODO can format for the tag be changed?
         if (entry->components == components)
         {
             memory = entry->data;
@@ -203,7 +202,6 @@ void Exif::File::setValue(ExifIfd ifd, ExifTag tag, const QByteArray& ascii)
 
     if (entry)
     {
-        Q_ASSERT(entry->format == EXIF_FORMAT_ASCII); // TODO can format for the tag be changed?
         if (entry->size == size)
         {
             memcpy(entry->data, ascii.data(), size);
@@ -229,7 +227,7 @@ void Exif::File::setValue(ExifIfd ifd, ExifTag tag, const QByteArray& ascii)
     entry->format = EXIF_FORMAT_ASCII;
 
     exif_content_add_entry(mExifData->ifd[ifd], entry); // Attach the ExifEntry to an IFD
-    exif_entry_unref(entry); // ExifEntry are now owned elsewhere
+    exif_entry_unref(entry);
 }
 
 QByteArray Exif::File::ascii(ExifIfd ifd, ExifTag tag) const
