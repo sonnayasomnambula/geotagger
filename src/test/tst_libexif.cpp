@@ -6,7 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include "exif.h"
+#include "exif/file.h"
+#include "exif/utils.h"
 #include "tmpjpegfile.h"
 
 
@@ -16,6 +17,7 @@ TEST(libexif, save_load)
     ASSERT_FALSE(jpeg.isEmpty()) << TmpJpegFile::lastError();
 
     double lat = 58.7203335774538746;
+    QByteArray lat_ref = "N";
 
     auto generated = Exif::Utils::toDMS(lat);
 
@@ -31,7 +33,7 @@ TEST(libexif, save_load)
         Exif::File exif;
         ASSERT_TRUE(exif.load(jpeg));
         exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE, generated);
-        exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE_REF, "N");
+        exif.setValue(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE_REF, lat_ref);
         ASSERT_TRUE(exif.save(jpeg));
     }
 
@@ -43,14 +45,16 @@ TEST(libexif, save_load)
         auto loaded = exif.uRationalVector(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE);
         ASSERT_EQ(3, loaded.size());
 
-        auto s = exif.ascii(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE_REF);
+        auto ref = exif.ascii(EXIF_IFD_GPS, Exif::Tag::GPS::LATITUDE_REF);
 
-        EXPECT_EQ(generated[0].numerator, loaded[0].numerator);
+        EXPECT_EQ(generated[0].numerator,   loaded[0].numerator);
         EXPECT_EQ(generated[0].denominator, loaded[0].denominator);
-        EXPECT_EQ(generated[1].numerator, loaded[1].numerator);
+        EXPECT_EQ(generated[1].numerator,   loaded[1].numerator);
         EXPECT_EQ(generated[1].denominator, loaded[1].denominator);
-        EXPECT_EQ(generated[2].numerator, loaded[2].numerator);
+        EXPECT_EQ(generated[2].numerator,   loaded[2].numerator);
         EXPECT_EQ(generated[2].denominator, loaded[2].denominator);
+
+        EXPECT_EQ(lat_ref, ref);
     }
 }
 

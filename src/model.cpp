@@ -9,7 +9,8 @@
 
 #include "gpx/loader.h"
 #include "gpx/track.h"
-#include "exif.h"
+#include "exif/file.h"
+#include "exif/utils.h"
 
 namespace Pics
 {

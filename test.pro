@@ -15,7 +15,8 @@ INCLUDEPATH += \
     src/3rdparty/sigvdr.de
 
 SOURCES += \
-    src/exif.cpp \
+    src/exif/file.cpp \
+    src/exif/utils.cpp \
     src/gpx/loader.cpp \
     src/gpx/statistic.cpp \
     src/test/tmpjpegfile.cpp \
@@ -23,7 +24,8 @@ SOURCES += \
     src/test/tst_libexif_trivial.cpp
 
 HEADERS += \
-    src/exif.h \
+    src/exif/file.h \
+    src/exif/utils.h \
     src/gpx/loader.h \
     src/gpx/statistic.h \
     src/gpx/track.h \
