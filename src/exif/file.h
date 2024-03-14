@@ -44,6 +44,8 @@ public:
     void setValue(ExifIfd ifd, ExifTag tag, const QByteArray& ascii);
     QByteArray ascii(ExifIfd ifd, ExifTag tag) const;
 
+    QByteArray thumbnail() const;
+
     const QString& errorString() const { return mErrorString; }
 };
 

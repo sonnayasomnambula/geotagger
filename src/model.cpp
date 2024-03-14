@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include <QDebug>
+#include <QImageReader>
 #include <QPixmap>
 #include <QPointF>
 
@@ -15,10 +16,22 @@
 namespace Pics
 {
 
-QPixmap thumbnail(const QPixmap& pixmap, int size)
+QPixmap thumbnail(QImageReader* reader, int width, int height)
 {
-    QPixmap pic = (pixmap.width() > pixmap.height()) ? pixmap.scaledToHeight(size) : pixmap.scaledToWidth(size);
-    return pic.copy((pic.width() - size) / 2, (pic.height() - size) / 2, size, size);
+    if (width == 0 || height == 0)
+        return QPixmap::fromImageReader(reader);
+
+    QSize size = reader->size();
+
+    double dw = 1.0 * width / size.width();
+    double dh = 1.0 * height / size.height();
+    QSize cropped_size = size * std::max(dw, dh);
+    reader->setScaledSize(cropped_size);
+    reader->setScaledClipRect(QRect((cropped_size.width() - width) / 2,
+                                    (cropped_size.height() - height) / 2,
+                                    width,
+                                    height));
+    return QPixmap::fromImageReader(reader);
 }
 
 QString toBase64(const QPixmap& pixmap)
@@ -115,12 +128,25 @@ bool jpeg::Loader::load(const QStringList& fileNames)
 
         {
             // TODO move to thread
-            // TODO use exif thumbnail
             QPixmap pix;
-            if (!pix.load(item.path))
+            QByteArray thumbnail = exif.thumbnail();
+            if (thumbnail.size())
+            {
+                QBuffer buffer(&thumbnail);
+                QImageReader reader(&buffer);
+                pix = Pics::thumbnail(&reader, 32, 32);
+            }
+
+            if (pix.isNull())
+            {
+                QImageReader reader(item.path);
+                pix = Pics::thumbnail(&reader, 32, 32);
+            }
+
+            if (pix.isNull())
                 item.pixmap = ":/img/not_available.png";
             else
-                item.pixmap = Pics::toBase64(Pics::thumbnail(pix, 32));
+                item.pixmap = Pics::toBase64(pix);
         }
 
         loaded.append(item);

@@ -294,3 +294,10 @@ QByteArray Exif::File::ascii(ExifIfd ifd, ExifTag tag) const
         d.resize(d.size() - 1);
     return d;
 }
+
+QByteArray Exif::File::thumbnail() const
+{
+    if (mExifData && mExifData->data && mExifData->size)
+        return QByteArray::fromRawData(reinterpret_cast<const char*>(mExifData->data), mExifData->size); // not copied
+    return {};
+}
