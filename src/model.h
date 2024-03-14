@@ -88,7 +88,7 @@ signals:
 
 public:
     struct Reason { enum { Set, Clear }; };
-    struct Role { enum { Index = Qt::UserRole, Path, Name, Latitude, Longitude, Altitude, Pixmap }; };
+    struct Role { enum { Index = Qt::UserRole, Path, Name, Latitude, Longitude, Pixmap }; };
     struct Column { enum { Name, Time, Position, Count }; };
 
     explicit Model(); // QML-used objects must be destoyed after QML engine so don't pass parent here

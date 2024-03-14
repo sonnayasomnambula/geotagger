@@ -369,9 +369,6 @@ QVariant Model::data(const QModelIndex &index, int role) const
     if (role == Role::Longitude)
         return item.lon();
 
-    if (role == Role::Altitude)
-        return item.altitude;
-
     if (role == Role::Pixmap)
         return item.pixmap;
 

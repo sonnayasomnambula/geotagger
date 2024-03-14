@@ -25,9 +25,7 @@ void Exif::File::log(ExifLog* /*log*/, ExifLogCode code, const char* domain, con
 Exif::File::File()
 {
     mAllocator = exif_mem_new_default();
-    mLog = exif_log_new_mem(mAllocator);
-
-    if (mLog)
+    if (mLog = exif_log_new_mem(mAllocator))
         exif_log_set_func(mLog, &File::log, this);
 }
 
@@ -47,7 +45,7 @@ bool Exif::File::load(const QString& fileName, bool createIfEmpty)
     std::wstring ws = mFileName.toStdWString();
     const wchar_t* path = ws.c_str();
 
-    // here some copy-paste from exif-data.c to support wchar_t
+    // here some copy-paste from exif-data.c modified to support wchar_t
 
     {
         // exif_data_new_from_file
@@ -56,9 +54,6 @@ bool Exif::File::load(const QString& fileName, bool createIfEmpty)
         ExifLoader *loader;
 
         loader = exif_loader_new ();
-
-        if (mLog)
-            exif_log_set_func(mLog, &File::log, this);
 
         {
             // exif_loader_write_file
@@ -120,7 +115,7 @@ bool Exif::File::save(const QString& fileName)
     std::wstring ws = fileName.toStdWString();
     const wchar_t* path = ws.data();
 
-    // here some copy-paste from jpeg-data.c to support wchar_t
+    // here some copy-paste from jpeg-data.c modified to support wchar_t
 
     {
         // jpeg_data_load_file
@@ -134,7 +129,9 @@ bool Exif::File::save(const QString& fileName)
 
         f = _wfopen (path, L"rb");
         if (!f) {
-            mErrorString = QString("[%1] Path '%2' invalid.").arg("jpeg-data").arg(path);
+            mErrorString = QString("[%1] Path '%2' invalid.")
+                               .arg("jpeg-data")
+                               .arg(path);
             qWarning().noquote() << mErrorString;
             return false;
         }

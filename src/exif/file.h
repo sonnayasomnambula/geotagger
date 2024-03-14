@@ -11,8 +11,6 @@ typedef struct _ExifData ExifData;
 struct _ExifData;
 typedef struct _ExifMem ExifMem;
 struct _ExifMem;
-typedef struct _ExifLog ExifLog;
-struct _ExifLog;
 
 namespace Exif {
 
@@ -23,13 +21,13 @@ namespace Exif {
 class File
 {
     QString mFileName;
-    ExifData * mExifData = nullptr;
-    ExifMem * mAllocator = nullptr;
-    ExifLog * mLog = nullptr;
+    ExifData* mExifData = nullptr;
+    ExifMem* mAllocator = nullptr;
+    ExifLog* mLog = nullptr;
 
     QString mErrorString;
 
-    static void log(ExifLog *log, ExifLogCode code, const char* domain, const char* format, va_list args, void* self);
+    static void log(ExifLog* log, ExifLogCode code, const char* domain, const char* format, va_list args, void* self);
 
 public:
     File();
